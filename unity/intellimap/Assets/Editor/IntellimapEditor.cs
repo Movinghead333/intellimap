@@ -17,6 +17,8 @@ public class IntellimapEditor : EditorWindow {
 
         targetTilemap = (Tilemap)EditorGUILayout.ObjectField(targetTilemap, typeof(Tilemap), true);
 
+        IntellimapGUIUtil.HorizontalLine(Color.grey);
+
         targetWidth = EditorGUILayout.IntField(targetWidth);
         targetHeight = EditorGUILayout.IntField(targetHeight);
 
