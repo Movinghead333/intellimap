@@ -1,19 +1,18 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Tilemaps;
-using System.IO;
 
 public class IntellimapEditor : EditorWindow {
+    
+    private TileBase testTile;
+
     private Tilemap targetTilemap;
     private int targetWidth;
     private int targetHeight;
 
     private Tilemap tilePalette;
     private string baseDataPath = "";
-
-    private float slider1Value = 0.0f;
-    private float slider2Value = 0.0f;
-    private float slider3Value = 0.0f;
     
     // Register window as menu item
     [MenuItem ("Window/Intellimap")]
@@ -23,6 +22,8 @@ public class IntellimapEditor : EditorWindow {
 
     // Window GUI code
     private void OnGUI() {
+        testTile =(TileBase)EditorGUILayout.ObjectField("Test Tile:", testTile, typeof(TileBase), true);
+
         targetTilemap = (Tilemap)EditorGUILayout.ObjectField("Target Tilemap:", targetTilemap, typeof(Tilemap), true);
         targetWidth = EditorGUILayout.IntField("Width:", targetWidth);
         targetHeight = EditorGUILayout.IntField("Height:", targetHeight);
@@ -47,21 +48,22 @@ public class IntellimapEditor : EditorWindow {
 
         IntellimapGUIUtil.HorizontalLine(Color.grey, leftMargin: 10, rightMargin: 10);
 
-        EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(15);
-            slider1Value = GUILayout.VerticalSlider(slider1Value, 100, 0, GUILayout.Height(100));
-            GUILayout.Space(15);
-            slider2Value = GUILayout.VerticalSlider(slider2Value, 100, 0, GUILayout.Height(100));
-            GUILayout.Space(15);
-            slider3Value = GUILayout.VerticalSlider(slider3Value, 100, 0, GUILayout.Height(100));
-        EditorGUILayout.EndHorizontal();
+        IntellimapGUIUtil.Histogram(3, 0);
 
-        EditorGUILayout.LabelField("Slider1 Value:", slider1Value.ToString());
+        IntellimapGUIUtil.Histogram(4, 1);
 
         IntellimapGUIUtil.HorizontalLine(Color.grey);
 
         if (GUILayout.Button("Generate")) {
-            ShowNotification(new GUIContent("W: " + targetWidth + ", H: " + targetHeight));
+            //ShowNotification(new GUIContent("W: " + targetWidth + ", H: " + targetHeight));
+            List<float> histogramValues = IntellimapGUIUtil.GetHistogramValues(0);
+            string output = "";
+            for (int i = 0; i < histogramValues.Count; i++) {
+                output += histogramValues[i] + " ";
+            }
+            ShowNotification(new GUIContent(output));
+
+            targetTilemap.SetTile(new Vector3Int(0, 0), testTile);
         }
 
     }
