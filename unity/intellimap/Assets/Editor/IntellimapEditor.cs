@@ -4,15 +4,16 @@ using UnityEditor;
 using UnityEngine.Tilemaps;
 
 public class IntellimapEditor : EditorWindow {
-    
     private TileBase testTile;
 
     private Tilemap targetTilemap;
-    private int targetWidth;
-    private int targetHeight;
+    private int targetWidth = 0;
+    private int targetHeight = 0;
 
     private Tilemap tilePalette;
     private string baseDataPath = "";
+
+    private IntellimapHistogram histogram = new IntellimapHistogram(4);
     
     // Register window as menu item
     [MenuItem ("Window/Intellimap")]
@@ -48,22 +49,21 @@ public class IntellimapEditor : EditorWindow {
 
         IntellimapGUIUtil.HorizontalLine(Color.grey, leftMargin: 10, rightMargin: 10);
 
-        IntellimapGUIUtil.Histogram(3, 0);
-
-        IntellimapGUIUtil.Histogram(4, 1);
+        histogram.Show();
 
         IntellimapGUIUtil.HorizontalLine(Color.grey);
 
         if (GUILayout.Button("Generate")) {
-            //ShowNotification(new GUIContent("W: " + targetWidth + ", H: " + targetHeight));
-            List<float> histogramValues = IntellimapGUIUtil.GetHistogramValues(0);
+            List<float> histogramValues = histogram.GetSliderValues();
             string output = "";
             for (int i = 0; i < histogramValues.Count; i++) {
                 output += histogramValues[i] + " ";
             }
             ShowNotification(new GUIContent(output));
 
-            targetTilemap.SetTile(new Vector3Int(0, 0), testTile);
+            if (targetTilemap != null && testTile != null) {
+                targetTilemap.SetTile(new Vector3Int(0, 0), testTile);
+            }
         }
 
     }
