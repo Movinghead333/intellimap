@@ -13,4 +13,15 @@ public class IntellimapGUIUtil {
         GUILayout.Box(GUIContent.none, horizontalLine);
         GUI.color = tempColor;
     }
+
+    public static float LimitToBounds(float f, float lower, float upper) {
+        if (f < lower) {
+            return lower;
+        }
+        else if (f > upper) {
+            return upper;
+        }
+
+        return f;
+    }
 }

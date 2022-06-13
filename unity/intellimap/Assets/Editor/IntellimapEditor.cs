@@ -7,18 +7,30 @@ public class IntellimapEditor : EditorWindow {
     private TileBase testTile;
 
     private Tilemap targetTilemap;
-    private int targetWidth = 0;
-    private int targetHeight = 0;
+    private int targetWidth;
+    private int targetHeight;
 
     private Tilemap tilePalette;
-    private string baseDataPath = "";
+    private string baseDataPath;
 
-    private IntellimapHistogram histogram = new IntellimapHistogram(4);
+    private IntellimapHistogram histogram;
+    private IntellimapDraggableBox draggableBox;
     
     // Register window as menu item
     [MenuItem ("Window/Intellimap")]
     public static void ShowWindow() {
         EditorWindow.GetWindow(typeof(IntellimapEditor), false, "Intellimap");
+    }
+
+    public void OnEnable() {
+        targetWidth = 0;
+        targetHeight = 0;
+
+        baseDataPath = "";
+
+        histogram = new IntellimapHistogram(4);
+
+        draggableBox = new IntellimapDraggableBox(50, 50, Color.grey, Color.white, this);
     }
 
     // Window GUI code
@@ -47,6 +59,12 @@ public class IntellimapEditor : EditorWindow {
 
         GUILayout.Label("TODO: Matrix");
 
+        EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(15);
+
+            draggableBox.Show();
+        EditorGUILayout.EndHorizontal();
+
         IntellimapGUIUtil.HorizontalLine(Color.grey, leftMargin: 10, rightMargin: 10);
 
         histogram.Show();
@@ -54,11 +72,12 @@ public class IntellimapEditor : EditorWindow {
         IntellimapGUIUtil.HorizontalLine(Color.grey);
 
         if (GUILayout.Button("Generate")) {
-            List<float> histogramValues = histogram.GetSliderValues();
+            /*List<float> histogramValues = histogram.GetSliderValues();
             string output = "";
             for (int i = 0; i < histogramValues.Count; i++) {
                 output += histogramValues[i] + " ";
-            }
+            }*/
+            string output = draggableBox.GetPercentage().ToString();
             ShowNotification(new GUIContent(output));
 
             if (targetTilemap != null && testTile != null) {

@@ -50,7 +50,7 @@ public class IntellimapHistogram {
                     float speed = thisSliderDistanceToCap / changedSliderDistanceToEnd;
                     
                     float changeToThisSlider = -diff * speed;
-                    AddToSlider(j, changeToThisSlider);
+                    sliderValues[j] = IntellimapGUIUtil.LimitToBounds(sliderValues[j] + changeToThisSlider, lower: 0, upper: 100);
                 }
 
                 sliderValues[i] = newSliderValue;
@@ -62,17 +62,6 @@ public class IntellimapHistogram {
 
     private bool isPositive(float f) {
         return f > 0;
-    }
-
-    private void AddToSlider(int sliderIndex, float change) {
-        sliderValues[sliderIndex] += change;
-
-        if (sliderValues[sliderIndex] > 100) {
-            sliderValues[sliderIndex] = 100;
-        }
-        else if (sliderValues[sliderIndex] < 0) {
-            sliderValues[sliderIndex] = 0;
-        }
     }
 
     public List<float> GetSliderValues() {
