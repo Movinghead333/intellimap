@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Tilemaps;
 
+// TODO: Add scrollbar
 public class IntellimapEditor : EditorWindow {
     private TileBase testTile;
 
@@ -14,7 +15,7 @@ public class IntellimapEditor : EditorWindow {
     private string baseDataPath;
 
     private IntellimapHistogram histogram;
-    private IntellimapDraggableBox draggableBox;
+    private IntellimapMatrix matrix;
     
     // Register window as menu item
     [MenuItem ("Window/Intellimap")]
@@ -30,7 +31,7 @@ public class IntellimapEditor : EditorWindow {
 
         histogram = new IntellimapHistogram(4);
 
-        draggableBox = new IntellimapDraggableBox(50, 50, Color.grey, Color.white, this);
+        matrix = new IntellimapMatrix(3, 3, 10, Color.gray, Color.white, 0.3f, this);
     }
 
     // Window GUI code
@@ -59,11 +60,7 @@ public class IntellimapEditor : EditorWindow {
 
         GUILayout.Label("TODO: Matrix");
 
-        EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(15);
-
-            draggableBox.Show();
-        EditorGUILayout.EndHorizontal();
+        matrix.Show();
 
         IntellimapGUIUtil.HorizontalLine(Color.grey, leftMargin: 10, rightMargin: 10);
 
@@ -77,8 +74,8 @@ public class IntellimapEditor : EditorWindow {
             for (int i = 0; i < histogramValues.Count; i++) {
                 output += histogramValues[i] + " ";
             }*/
-            string output = draggableBox.GetPercentage().ToString();
-            ShowNotification(new GUIContent(output));
+            //string output = draggableBox.GetPercentage().ToString();
+            //ShowNotification(new GUIContent(output));
 
             if (targetTilemap != null && testTile != null) {
                 targetTilemap.SetTile(new Vector3Int(0, 0), testTile);

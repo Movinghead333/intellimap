@@ -4,40 +4,40 @@ using UnityEngine;
 using UnityEditor;
 
 public class IntellimapDraggableBox {
-    Texture2D texture;
-    
+    private EditorWindow parentWindow;
+
     private int width;
     private int height;
     private float currentPercentage;
-
-    Color foregroundColor;
-    Color backgroundColor;
-
     private bool dragStartedInBox;
 
-    EditorWindow parentWindow;
+    private Texture2D texture;
+    private Color foregroundColor;
+    private Color backgroundColor;
+    private GUIStyle style;
+
+    public IntellimapDraggableBox(Color foregroundColor, Color backgroundColor, EditorWindow parentWindow)
+        : this(2, 2, foregroundColor, backgroundColor, parentWindow) {}
 
     public IntellimapDraggableBox(int width, int height, Color foregroundColor, Color backgroundColor, EditorWindow parentWindow) {
         this.parentWindow = parentWindow;
-        texture = new Texture2D(width, height);
 
         this.width = width;
         this.height = height;
-
-        this.foregroundColor = foregroundColor;
-        this.backgroundColor = backgroundColor;
-
         dragStartedInBox = false;
 
+        texture = new Texture2D(width, height);
+        this.foregroundColor = foregroundColor;
+        this.backgroundColor = backgroundColor;
         FillTextureUpTo(height / 2);
-    }
 
-    public void Show() {
-        GUIStyle style = new GUIStyle();
+        style = new GUIStyle();
         style.normal.background = texture;
         style.fixedWidth = width;
         style.fixedHeight = height;
+    }
 
+    public void Show() {
         GUILayout.Box(GUIContent.none, style);
         Rect boxRect = GUILayoutUtility.GetLastRect();
 
@@ -69,6 +69,7 @@ public class IntellimapDraggableBox {
         FillTextureUpTo(newFillHeight);
     }
 
+    // TODO: Make more efficient (give the entire array of data at once instead of setting every pixel individually)
     private void FillTextureUpTo(float newFillHeight) {
         currentPercentage = newFillHeight / height;
 
@@ -83,6 +84,21 @@ public class IntellimapDraggableBox {
         texture.Apply();
         
         parentWindow.Repaint();
+    }
+
+    public float GetPercentage() {
+        return currentPercentage;
+    }
+
+    public void Resize(int width, int height) {
+        this.width = width;
+        this.height = height;
+        texture.Reinitialize(width, height);
+
+        FillTextureUpTo(currentPercentage * height);
+
+        style.fixedWidth = width;
+        style.fixedHeight = height;
     }
 
     private bool InRectangle(Rect rect, float x, float y) {
@@ -104,9 +120,4 @@ public class IntellimapDraggableBox {
     private bool MouseDrag() {
         return Event.current.type == EventType.MouseDrag;
     }
-
-    public float GetPercentage() {
-        return currentPercentage;
-    }
-
 }
