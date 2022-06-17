@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEditor;
 using System;
 
+using static IntellimapGUIUtil;
+
 public class IntellimapHistogram {
     private int numBuckets;
     private List<float> sliderValues;
@@ -28,30 +30,9 @@ public class IntellimapHistogram {
             GUILayout.Space(15);
 
             float newSliderValue = GUILayout.VerticalSlider(sliderValues[i], 100, 0, GUILayout.Height(100));
+            
             if (newSliderValue != sliderValues[i]) {
-                float diff = newSliderValue - sliderValues[i];
-
-                for (int j = 0; j < numBuckets; j++) {
-                    if (i == j) continue;
-
-                    float changedSliderDistanceToEnd;
-                    float thisSliderDistanceToCap;
-
-                    if (isPositive(diff)) {
-                        changedSliderDistanceToEnd = 100 - sliderValues[i];
-                        thisSliderDistanceToCap = sliderValues[j];
-                    }
-                    else {
-                        changedSliderDistanceToEnd = sliderValues[i];
-                        float cap = 100f / (numBuckets - 1);
-                        thisSliderDistanceToCap = cap - sliderValues[j];
-                    }
-
-                    float speed = thisSliderDistanceToCap / changedSliderDistanceToEnd;
-                    
-                    float changeToThisSlider = -diff * speed;
-                    sliderValues[j] = IntellimapGUIUtil.LimitToBounds(sliderValues[j] + changeToThisSlider, lower: 0, upper: 100);
-                }
+                AdjustOtherSliders(i, newSliderValue);
 
                 sliderValues[i] = newSliderValue;
             }
@@ -60,8 +41,70 @@ public class IntellimapHistogram {
         EditorGUILayout.EndHorizontal();
     }
 
+    private void AdjustOtherSliders(int changedSliderIndex, float newSliderValue) {
+        float diff = newSliderValue - sliderValues[changedSliderIndex];
+                
+        // Collect distance to end for every slider
+        float changedSliderDistanceToEnd;
+        float[] otherSlidersDistancesToEnd = new float[numBuckets];
+
+        if (isPositive(diff)) {
+            changedSliderDistanceToEnd = 100 - sliderValues[changedSliderIndex];
+
+            for (int i = 0; i < numBuckets; i++) {
+                if (i == changedSliderIndex)
+                    otherSlidersDistancesToEnd[i] = 0;
+                else
+                    otherSlidersDistancesToEnd[i] = sliderValues[i];
+            }
+        }
+        else {
+            changedSliderDistanceToEnd = sliderValues[changedSliderIndex];
+
+            for (int i = 0; i < numBuckets; i++) {
+                if (i == changedSliderIndex)
+                    otherSlidersDistancesToEnd[i] = 0;
+                else
+                    otherSlidersDistancesToEnd[i] = 100 - sliderValues[i];
+            }
+        }
+
+        float otherSlidersSum = Sum(otherSlidersDistancesToEnd);
+
+        // Adjust other sliders
+        for (int i = 0; i < numBuckets; i++) {
+            if (i == changedSliderIndex) continue;
+   
+            float percentChangeToSlider = otherSlidersDistancesToEnd[i] / otherSlidersSum;
+            float changeToSlider = percentChangeToSlider * -diff;
+
+            sliderValues[i] = RoundOnEdge(LimitToBounds(sliderValues[i] + changeToSlider, lower: 0, upper: 100));
+        }
+    }
+
     private bool isPositive(float f) {
         return f > 0;
+    }
+
+    private float Sum(float[] arr) {
+        float result = 0;
+
+        for (int i = 0; i < arr.Length; i++) {
+            result += arr[i];
+        }
+
+        return result;
+    }
+
+    private float RoundOnEdge(float f) {
+        if (f < 0.01) {
+            return 0;
+        }
+        if (f > 99.99) {
+            return 100;
+        }
+
+        return f;
     }
 
     public List<float> GetSliderValues() {

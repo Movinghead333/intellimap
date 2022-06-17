@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
+using static IntellimapGUIUtil;
+
 public class IntellimapDraggableBox {
     private EditorWindow parentWindow;
 
@@ -64,7 +66,7 @@ public class IntellimapDraggableBox {
     }
 
     private void UpdateTexture(float mouseY, float topY) {
-        float freeSpaceOnTop = IntellimapGUIUtil.LimitToBounds(mouseY - topY, lower: 0, upper: height);
+        float freeSpaceOnTop = LimitToBounds(mouseY - topY, lower: 0, upper: height);
         float newFillHeight = height - freeSpaceOnTop;
         FillTextureUpTo(newFillHeight);
     }

@@ -69,13 +69,14 @@ public class IntellimapEditor : EditorWindow {
         IntellimapGUIUtil.HorizontalLine(Color.grey);
 
         if (GUILayout.Button("Generate")) {
-            /*List<float> histogramValues = histogram.GetSliderValues();
+            List<float> histogramValues = histogram.GetSliderValues();
             string output = "";
             for (int i = 0; i < histogramValues.Count; i++) {
                 output += histogramValues[i] + " ";
-            }*/
+            }
             //string output = draggableBox.GetPercentage().ToString();
-            //ShowNotification(new GUIContent(output));
+            
+            ShowNotification(new GUIContent(output));
 
             if (targetTilemap != null && testTile != null) {
                 targetTilemap.SetTile(new Vector3Int(0, 0), testTile);
