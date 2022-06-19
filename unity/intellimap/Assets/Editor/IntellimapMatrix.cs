@@ -91,7 +91,10 @@ public class IntellimapMatrix {
             blockSizeInclSpace = maxAllowedHeight / height;
         }
 
-        float accountingForLastSpace = spaceBetweenBoxes / width;
+        // (width-1) instead of width, because this way the boxes add up to be just slightly smaller than the full window width,
+        // which makes it so that it doesn't constantly trigger the horizontal scrollbar
+        // and also makes some space for the vertical scrollbar on the right.
+        float accountingForLastSpace = spaceBetweenBoxes / (width-1);
         int boxSize = (int)(blockSizeInclSpace - spaceBetweenBoxes - accountingForLastSpace);
 
         SetBoxSize(boxSize);

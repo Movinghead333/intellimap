@@ -7,6 +7,8 @@ using UnityEngine.Tilemaps;
 public class IntellimapEditor : EditorWindow {
     private TileBase testTile;
 
+    private Vector2 scrollPos;
+
     private Tilemap targetTilemap;
     private int targetWidth;
     private int targetHeight;
@@ -24,6 +26,8 @@ public class IntellimapEditor : EditorWindow {
     }
 
     public void OnEnable() {
+        scrollPos = new Vector2(0, 0);
+
         targetWidth = 0;
         targetHeight = 0;
 
@@ -31,11 +35,13 @@ public class IntellimapEditor : EditorWindow {
 
         histogram = new IntellimapHistogram(4);
 
-        matrix = new IntellimapMatrix(3, 3, 10, Color.gray, Color.white, 0.3f, this);
+        matrix = new IntellimapMatrix(3, 3, 10, Color.gray, Color.white, 0.7f, this);
     }
 
     // Window GUI code
     private void OnGUI() {
+        scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+
         testTile =(TileBase)EditorGUILayout.ObjectField("Test Tile:", testTile, typeof(TileBase), true);
 
         targetTilemap = (Tilemap)EditorGUILayout.ObjectField("Target Tilemap:", targetTilemap, typeof(Tilemap), true);
@@ -83,6 +89,7 @@ public class IntellimapEditor : EditorWindow {
             }
         }
 
+        EditorGUILayout.EndScrollView();
     }
 
 }
