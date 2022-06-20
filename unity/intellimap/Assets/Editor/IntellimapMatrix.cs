@@ -3,35 +3,42 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-// TODO: Give back fill status of individual boxes | Make symmetrical matrix
+// TODO: Allow control over boxes from outside
 public class IntellimapMatrix {
     private EditorWindow parentWindow;
     private float lastWindowWidth;
     private float lastWindowHeight;
 
-    private int width;
-    private int height;
+    private int size;
     private float spaceBetweenBoxes;
     private float maxPercentageOfWindowHeight;
 
     private List<IntellimapDraggableBox> boxes;
 
-    public IntellimapMatrix(int width, int height, float spaceBetweenBoxes,
-                            Color foregroundColor, Color backgroundColor,
+    public IntellimapMatrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor,
                             float maxPercentageOfWindowHeight, EditorWindow parentWindow)
     {
         this.parentWindow = parentWindow;
         lastWindowWidth = parentWindow.position.width;
         lastWindowHeight = parentWindow.position.height;
 
-        this.width = width;
-        this.height = height;
-        this.spaceBetweenBoxes = spaceBetweenBoxes;
+        this.size = size;
+        spaceBetweenBoxes = 0;
         this.maxPercentageOfWindowHeight = maxPercentageOfWindowHeight;
 
         boxes = new List<IntellimapDraggableBox>();
-        for (int i = 0; i < width * height; i++) {
-            boxes.Add(new IntellimapDraggableBox(foregroundColor, backgroundColor, parentWindow));
+        for (int i = 0; i < size * size; i++) {
+            boxes.Add(new IntellimapDraggableBox(foregroundColor, backgroundColor, borderColor, parentWindow));
+        }
+
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                if (x > y) {
+                    int thisIndex = y * size + x;
+                    int otherIndex = x * size + y;
+                    boxes[thisIndex].connectWith(boxes[otherIndex]);
+                }
+            }
         }
 
         UpdateBoxSize();
@@ -40,16 +47,18 @@ public class IntellimapMatrix {
     public void Show() {
         HandleWindowResize();
 
-        for (int y = 0; y < height; y++) {
+        for (int y = 0; y < size; y++) {
             GUILayout.Space(spaceBetweenBoxes);
 
             GUILayout.BeginHorizontal();
+            
+            GUILayout.Space(15);
 
-            for (int x = 0; x < width; x++) {
+            for (int x = 0; x < size; x++) {
+                int index = y * size + x;
+                boxes[index].Show();
+
                 GUILayout.Space(spaceBetweenBoxes);
-
-                int boxIndex = y * width + x;
-                boxes[boxIndex].Show();
             }
 
             GUILayout.EndHorizontal();
@@ -62,12 +71,8 @@ public class IntellimapMatrix {
         }
     }
 
-    public int GetWidth() {
-        return width;
-    }
-
-    public int GetHeight() {
-        return height;
+    public int GetSize() {
+        return size;
     }
 
     private void HandleWindowResize() {
@@ -82,19 +87,20 @@ public class IntellimapMatrix {
     private void UpdateBoxSize() {
         float windowWidth = parentWindow.position.width;
         float windowHeight = parentWindow.position.height;
-
-        float blockSizeInclSpace = windowWidth / width;
-
-        float totalHeight = blockSizeInclSpace * height;
         float maxAllowedHeight = maxPercentageOfWindowHeight * windowHeight;
-        if (totalHeight > maxAllowedHeight) {
-            blockSizeInclSpace = maxAllowedHeight / height;
+
+        float blockSizeInclSpace;
+        if (maxAllowedHeight < windowWidth) {
+            blockSizeInclSpace = maxAllowedHeight / size;
+        }
+        else {
+            blockSizeInclSpace = windowWidth / size;
         }
 
-        // (width-1) instead of width, because this way the boxes add up to be just slightly smaller than the full window width,
+        // (size-1) instead of size, because this way the boxes add up to be just slightly smaller than the full window width,
         // which makes it so that it doesn't constantly trigger the horizontal scrollbar
         // and also makes some space for the vertical scrollbar on the right.
-        float accountingForLastSpace = spaceBetweenBoxes / (width-1);
+        float accountingForLastSpace = spaceBetweenBoxes / (size-1);
         int boxSize = (int)(blockSizeInclSpace - spaceBetweenBoxes - accountingForLastSpace);
 
         SetBoxSize(boxSize);

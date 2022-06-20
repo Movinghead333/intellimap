@@ -13,7 +13,7 @@ public class MatrixTestWindow : EditorWindow {
     }
 
     public void OnEnable() {
-        matrix = new IntellimapMatrix(3, 2, 10, Color.gray, Color.white, 0.8f, this);
+        matrix = new IntellimapMatrix(3, Color.gray, Color.white, Color.black, 0.8f, this);
     }
 
     private void OnGUI() {

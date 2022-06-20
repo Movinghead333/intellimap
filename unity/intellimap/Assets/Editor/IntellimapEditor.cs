@@ -35,7 +35,7 @@ public class IntellimapEditor : EditorWindow {
 
         histogram = new IntellimapHistogram(4);
 
-        matrix = new IntellimapMatrix(3, 3, 10, Color.gray, Color.white, 0.7f, this);
+        matrix = new IntellimapMatrix(3, Color.gray, Color.white, Color.black, 0.3f, this);
     }
 
     // Window GUI code
@@ -63,8 +63,6 @@ public class IntellimapEditor : EditorWindow {
         EditorGUILayout.LabelField("Current base data path:", baseDataPath);
 
         IntellimapGUIUtil.HorizontalLine(Color.grey);
-
-        GUILayout.Label("TODO: Matrix");
 
         matrix.Show();
 

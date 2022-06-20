@@ -16,27 +16,34 @@ public class IntellimapDraggableBox {
     private Texture2D texture;
     private Color foregroundColor;
     private Color backgroundColor;
+    private Color borderColor;
     private GUIStyle style;
 
-    public IntellimapDraggableBox(Color foregroundColor, Color backgroundColor, EditorWindow parentWindow)
-        : this(2, 2, foregroundColor, backgroundColor, parentWindow) {}
+    private IntellimapDraggableBox connectedBox;
 
-    public IntellimapDraggableBox(int width, int height, Color foregroundColor, Color backgroundColor, EditorWindow parentWindow) {
+    public IntellimapDraggableBox(Color foregroundColor, Color backgroundColor, Color borderColor, EditorWindow parentWindow)
+        : this(2, 2, foregroundColor, backgroundColor, borderColor, parentWindow) {}
+
+    public IntellimapDraggableBox(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor, EditorWindow parentWindow) {
         this.parentWindow = parentWindow;
 
         this.width = width;
         this.height = height;
+        currentPercentage = 0.5f;
         dragStartedInBox = false;
 
         texture = new Texture2D(width, height);
         this.foregroundColor = foregroundColor;
         this.backgroundColor = backgroundColor;
-        FillTextureUpTo(height / 2);
+        this.borderColor = borderColor;
+        UpdateTexture();
 
         style = new GUIStyle();
         style.normal.background = texture;
         style.fixedWidth = width;
         style.fixedHeight = height;
+
+        connectedBox = null;
     }
 
     public void Show() {
@@ -51,12 +58,12 @@ public class IntellimapDraggableBox {
                 if (InRectangle(boxRect, mouseX, mouseY)) {
                     dragStartedInBox = true;
 
-                    UpdateTexture(mouseY, boxRect.y);
+                    HandleMouseDragEvent(mouseY, boxRect.y);
                 }
             }
             
             if (dragStartedInBox && MouseDrag()) {
-                UpdateTexture(mouseY, boxRect.y);
+                HandleMouseDragEvent(mouseY, boxRect.y);
             }
 
             if (MouseUp()) {
@@ -65,31 +72,23 @@ public class IntellimapDraggableBox {
         }
     }
 
-    private void UpdateTexture(float mouseY, float topY) {
-        float freeSpaceOnTop = LimitToBounds(mouseY - topY, lower: 0, upper: height);
-        float newFillHeight = height - freeSpaceOnTop;
-        FillTextureUpTo(newFillHeight);
-    }
-
-    // TODO: Make more efficient (give the entire array of data at once instead of setting every pixel individually)
-    private void FillTextureUpTo(float newFillHeight) {
-        currentPercentage = newFillHeight / height;
-
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                if (y < newFillHeight)
-                    texture.SetPixel(x, y, foregroundColor);
-                else
-                    texture.SetPixel(x, y, backgroundColor);
-            }
-        }
-        texture.Apply();
-        
-        parentWindow.Repaint();
+    public void connectWith(IntellimapDraggableBox otherBox) {
+        connectedBox = otherBox;
+        otherBox.connectedBox = this;
     }
 
     public float GetPercentage() {
         return currentPercentage;
+    }
+
+    public void SetPercentage(float percentage) {
+        currentPercentage = percentage;
+        UpdateTexture();
+
+        if (connectedBox != null) {
+            connectedBox.currentPercentage = percentage;
+            connectedBox.UpdateTexture();
+        }
     }
 
     public void Resize(int width, int height) {
@@ -97,10 +96,40 @@ public class IntellimapDraggableBox {
         this.height = height;
         texture.Reinitialize(width, height);
 
-        FillTextureUpTo(currentPercentage * height);
+        UpdateTexture();
 
         style.fixedWidth = width;
         style.fixedHeight = height;
+    }
+
+    private void HandleMouseDragEvent(float mouseY, float topY) {
+        float freeSpaceOnTop = LimitToBounds(mouseY - topY, lower: 0, upper: height);
+        float newFillHeight = height - freeSpaceOnTop;
+
+        SetPercentage(newFillHeight / height);
+    }
+
+    // TODO: Make more efficient (give the entire array of data at once instead of setting every pixel individually)
+    private void UpdateTexture() {
+        int fillHeight = (int)(currentPercentage * height);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (y == 0 || x == 0 || y == height - 1 || x == width - 1) {
+                    texture.SetPixel(x, y, borderColor);
+                }
+                else {
+                    if (y < fillHeight)
+                        texture.SetPixel(x, y, foregroundColor);
+                    else
+                        texture.SetPixel(x, y, backgroundColor);
+                }
+
+            }
+        }
+        texture.Apply();
+        
+        parentWindow.Repaint();
     }
 
     private bool InRectangle(Rect rect, float x, float y) {
