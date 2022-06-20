@@ -12,26 +12,6 @@ public class WFCTest : MonoBehaviour
 
     public TileBase[] tileBases;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        //int numberOfTiles = 3;
-        //Vector2Int mapSize = new Vector2Int(50, 50);
-        //bool[,,] adjacencyConstraint = new bool[,,]{
-        //    {{T, T, T, T }, {F, F, F, F }, {T, T, F, T }, }, // Adjacencies for Tile 0
-        //    {{F, F, F, F }, {T, T, T, T }, {T, T, T, T }, }, // Adjacencies for Tile 1
-        //    {{F, T, T, T }, {T, T, T, T }, {T, T, T, T }, }, // Adjacencies for Tile 2
-        //};
-
-        //WFCInput input = new WFCInput(numberOfTiles, mapSize, adjacencyConstraint);
-
-        //WFCOutput output = WFCAlgorithm.Compute(input);
-
-        //Render(output);
-
-        //Debug.Log(output);
-    }
-
     private void Render(WFCOutput output)
     {
         for (int x = 0; x < output.tilemapIds.GetLength(0); x++)
@@ -52,6 +32,7 @@ public class WFCTest : MonoBehaviour
             {{F, T, T, T }, {T, T, T, T }, {T, T, T, T }, }, // Adjacencies for Tile 2
         };
 
+        // TODO: do symetry check on constraint matrix
         WFCInput input = new WFCInput(numberOfTiles, mapSize, adjacencyConstraint);
 
         WFCOutput output = WFCAlgorithm.Compute(input);

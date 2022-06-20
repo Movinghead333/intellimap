@@ -25,10 +25,7 @@ public class WFCAlgorithm
 
         // Init the result based on the desired mapSize
         resultTilemap = new int?[wfcInput.mapSize.x, wfcInput.mapSize.y];
-        for (int x = 0; x < wfcInput.mapSize.x; x++)
-            for (int y = 0; y < wfcInput.mapSize.y; y++)
-                // Init the tileDomains to maximum entropy in the beginning
-                tileDomains = new bool[wfcInput.mapSize.x, wfcInput.mapSize.y, wfcInput.numberOfTileTypes];
+        tileDomains = new bool[wfcInput.mapSize.x, wfcInput.mapSize.y, wfcInput.numberOfTileTypes];
 
         for (int x = 0; x < wfcInput.mapSize.x; x++)
             for (int y = 0; y < wfcInput.mapSize.y; y++)
