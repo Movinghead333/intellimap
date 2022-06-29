@@ -5,7 +5,6 @@ using UnityEditor;
 using UnityEngine.Tilemaps;
 using System;
 
-// TODO: Make a minimal size constraint for the matrix
 public class IntellimapMatrix {
     private EditorWindow parentWindow;
     private float lastWindowWidth;
@@ -14,14 +13,15 @@ public class IntellimapMatrix {
     private int size;
     private float maxPercentageOfWindowHeight;
     private int boxSize;
+    private int minBoxSize;
 
-    private IntellimapDraggableBox[] boxes;
+    private IntellimapWeightBox[] boxes;
 
     private IntellimapTextureBox axisTitleBox;
     private IntellimapTextureBox[] axisBoxes;
 
     public IntellimapMatrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor,
-                            float maxPercentageOfWindowHeight, EditorWindow parentWindow)
+                            float maxPercentageOfWindowHeight, int minBoxSize, EditorWindow parentWindow)
     {
         this.parentWindow = parentWindow;
         lastWindowWidth = parentWindow.position.width;
@@ -29,10 +29,11 @@ public class IntellimapMatrix {
 
         this.size = size;
         this.maxPercentageOfWindowHeight = maxPercentageOfWindowHeight;
+        this.minBoxSize = minBoxSize;
 
-        boxes = new IntellimapDraggableBox[size * size];
+        boxes = new IntellimapWeightBox[size * size];
         for (int i = 0; i < size * size; i++) {
-            boxes[i] = new IntellimapDraggableBox(foregroundColor, backgroundColor, borderColor, parentWindow);
+            boxes[i] = new IntellimapWeightBox(foregroundColor, backgroundColor, borderColor, parentWindow);
         }
 
         for (int y = 0; y < size; y++) {
@@ -45,12 +46,12 @@ public class IntellimapMatrix {
             }
         }
 
-        axisTitleBox = new IntellimapTextureBox(Color.clear, Color.grey);
-        axisTitleBox.SetText("Weights");
+        axisTitleBox = new IntellimapTextureBox(backgroundColor, borderColor);
+        //axisTitleBox.SetText("Weights");
 
         axisBoxes = new IntellimapTextureBox[size];
         for (int i = 0; i < axisBoxes.Length; i++) {
-            axisBoxes[i] = new IntellimapTextureBox(Color.clear, Color.grey);
+            axisBoxes[i] = new IntellimapTextureBox(backgroundColor, borderColor);
         }
 
         UpdateBoxSize();
@@ -144,6 +145,10 @@ public class IntellimapMatrix {
         // 2*15 for the hardcoded space in Show() and 5 for a potential scrollbar on the right
         float correctingForSpace = 35.0f / sizeInclAxes;
         boxSize -= (int)correctingForSpace;
+
+        if (boxSize < minBoxSize) {
+            boxSize = minBoxSize;
+        }
 
         if (boxSize != this.boxSize) {
             this.boxSize = boxSize;

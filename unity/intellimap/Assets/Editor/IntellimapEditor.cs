@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Tilemaps;
 
-// TODO: Add scrollbar
 public class IntellimapEditor : EditorWindow {
     private TileBase testTile;
 
@@ -36,7 +35,8 @@ public class IntellimapEditor : EditorWindow {
         histogram = new IntellimapHistogram(4);
 
         Color foregroundColor = new Color(0.8f, 0.8f, 0.8f);
-        matrix = new IntellimapMatrix(5, foregroundColor, Color.clear, Color.grey, 0.5f, this);
+        Color backgroundColor = new Color(0.2f, 0.2f, 0.2f);
+        matrix = new IntellimapMatrix(10, foregroundColor, backgroundColor, Color.grey, 0.7f, 30, this);
     }
 
     // Window GUI code

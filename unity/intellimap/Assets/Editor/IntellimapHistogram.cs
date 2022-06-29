@@ -82,20 +82,6 @@ public class IntellimapHistogram {
         }
     }
 
-    private bool isPositive(float f) {
-        return f > 0;
-    }
-
-    private float Sum(float[] arr) {
-        float result = 0;
-
-        for (int i = 0; i < arr.Length; i++) {
-            result += arr[i];
-        }
-
-        return result;
-    }
-
     private float RoundOnEdge(float f) {
         if (f < 0.01) {
             return 0;

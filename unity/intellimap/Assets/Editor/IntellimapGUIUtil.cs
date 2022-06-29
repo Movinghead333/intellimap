@@ -24,4 +24,18 @@ public class IntellimapGUIUtil {
 
         return f;
     }
+
+    public static bool isPositive(float f) {
+        return f > 0;
+    }
+
+    public static float Sum(float[] arr) {
+        float result = 0;
+
+        for (int i = 0; i < arr.Length; i++) {
+            result += arr[i];
+        }
+
+        return result;
+    }
 }
