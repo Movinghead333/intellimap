@@ -27,9 +27,10 @@ public class WFCTest : MonoBehaviour
         int numberOfTiles = 3;
         Vector2Int mapSize = new Vector2Int(50, 50);
         bool[,,] adjacencyConstraint = new bool[,,]{
-            {{T, T, T, T }, {F, F, F, F }, {T, T, F, T }, }, // Adjacencies for Tile 0
+            {{T, T, T, T }, {F, F, F, F }, {T, T, T, T }, }, // Adjacencies for Tile 0
             {{F, F, F, F }, {T, T, T, T }, {T, T, T, T }, }, // Adjacencies for Tile 1
-            {{F, T, T, T }, {T, T, T, T }, {T, T, T, T }, }, // Adjacencies for Tile 2
+            {{T, T, T, T }, {T, T, T, T }, {T, T, T, T }, }, // Adjacencies for Tile 2
+
         };
 
         // TODO: do symetry check on constraint matrix
