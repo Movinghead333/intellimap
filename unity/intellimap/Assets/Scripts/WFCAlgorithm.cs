@@ -151,7 +151,7 @@ public class WFCAlgorithm
                                     targetTileChanged = true;
                                     // We or here to get the union of all tiles possible coming from the
                                     // set of constraints enabled by the domain of the currently checked tile
-                                    tempStates[j] = tempStates[j] || connectionAllowed;
+                                    tempStates[j] = tempStates[j] || connectionAllowed; // TODO: detect flip in flag
                                 }
                             }
                         }
@@ -159,6 +159,7 @@ public class WFCAlgorithm
                         // We then and the result of allowed tiles from the propagation with the current state of the neighbouring tile's domain
                         for (int j = 0; j < wfcInput.numberOfTileTypes; j++)
                             tileDomains[targetPosition.x, targetPosition.y, j] = tileDomains[targetPosition.x, targetPosition.y, j] && tempStates[j];
+                        // TODO: check for chane in tile domain here
 
                         // If the tile did in fact change, then we have to see if there are further implications
                         if (targetTileChanged)
