@@ -5,61 +5,83 @@ using UnityEditor;
 using UnityEngine.Tilemaps;
 using System;
 
-public class IntellimapMatrix {
+public class Matrix {
     private EditorWindow parentWindow;
     private float lastWindowWidth;
     private float lastWindowHeight;
+
+    private WeightBoxDetailView detailView;
 
     private int size;
     private float maxPercentageOfWindowHeight;
     private int boxSize;
     private int minBoxSize;
 
-    private IntellimapWeightBox[] boxes;
+    Color foregroundColor;
+    Color backgroundColor;
+    Color borderColor;
 
-    private IntellimapTextureBox axisTitleBox;
-    private IntellimapTextureBox[] axisBoxes;
+    private WeightBox[] boxes;
 
-    public IntellimapMatrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor,
+    private TextureBox axisTitleBox;
+    private TextureBox[] axisBoxes;
+
+    public Matrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor,
                             float maxPercentageOfWindowHeight, int minBoxSize, EditorWindow parentWindow)
     {
         this.parentWindow = parentWindow;
         lastWindowWidth = parentWindow.position.width;
         lastWindowHeight = parentWindow.position.height;
 
-        this.size = size;
+        detailView = new WeightBoxDetailView();
+
         this.maxPercentageOfWindowHeight = maxPercentageOfWindowHeight;
         this.minBoxSize = minBoxSize;
 
-        boxes = new IntellimapWeightBox[size * size];
+        this.foregroundColor = foregroundColor;
+        this.backgroundColor = backgroundColor;
+        this.borderColor = borderColor;
+
+        Init(size);
+    }
+
+    public void Init(int size) {
+        this.size = size;
+
+        boxes = new WeightBox[size * size];
         for (int i = 0; i < size * size; i++) {
-            boxes[i] = new IntellimapWeightBox(foregroundColor, backgroundColor, borderColor, parentWindow);
+            boxes[i] = new WeightBox(foregroundColor, backgroundColor, borderColor, detailView, parentWindow);
         }
 
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
+                int thisIndex = y * size + x;
+
                 if (x > y) {
-                    int thisIndex = y * size + x;
                     int otherIndex = x * size + y;
                     boxes[thisIndex].connectWith(boxes[otherIndex]);
+                }
+                else if (x < y) {
+                    boxes[thisIndex].SetAlpha(0.6f);
                 }
             }
         }
 
-        axisTitleBox = new IntellimapTextureBox(backgroundColor, borderColor);
+        axisTitleBox = new TextureBox(backgroundColor, borderColor);
         //axisTitleBox.SetText("Weights");
 
-        axisBoxes = new IntellimapTextureBox[size];
+        axisBoxes = new TextureBox[size];
         for (int i = 0; i < axisBoxes.Length; i++) {
-            axisBoxes[i] = new IntellimapTextureBox(backgroundColor, borderColor);
+            axisBoxes[i] = new TextureBox(backgroundColor, borderColor);
         }
 
-        UpdateBoxSize();
+        UpdateBoxSize(forceResize: true);
     }
 
     public void Show() {
         HandleWindowResize();
 
+        GUILayout.Space(15);
         GUILayout.BeginHorizontal();
         GUILayout.Space(15);
         axisTitleBox.Show();
@@ -85,6 +107,18 @@ public class IntellimapMatrix {
 
             GUILayout.EndHorizontal();
         }
+
+        detailView.Show();
+    }
+
+    public void SetBoxWeights(int x, int y, float[] weights) {
+        int index = y * size + x;
+        boxes[index].SetWeights(weights);
+    }
+
+    public float[] GetBoxWeights(int x, int y) {
+        int index = y * size + x;
+        return boxes[index].GetWeights();
     }
 
     public void SetBoxSize(int boxSize) {
@@ -120,14 +154,14 @@ public class IntellimapMatrix {
 
     private void HandleWindowResize() {
         if (WindowSizeChanged()) {
-            UpdateBoxSize();
+            UpdateBoxSize(forceResize: false);
 
             lastWindowWidth = parentWindow.position.width;
             lastWindowHeight = parentWindow.position.height;
         }
     }
 
-    private void UpdateBoxSize() {
+    private void UpdateBoxSize(bool forceResize) {
         float windowWidth = parentWindow.position.width;
         float windowHeight = parentWindow.position.height;
         float maxAllowedHeight = maxPercentageOfWindowHeight * windowHeight;
@@ -145,12 +179,12 @@ public class IntellimapMatrix {
         // 2*15 for the hardcoded space in Show() and 5 for a potential scrollbar on the right
         float correctingForSpace = 35.0f / sizeInclAxes;
         boxSize -= (int)correctingForSpace;
-
+        
         if (boxSize < minBoxSize) {
             boxSize = minBoxSize;
         }
 
-        if (boxSize != this.boxSize) {
+        if (forceResize || boxSize != this.boxSize) {
             this.boxSize = boxSize;
             SetBoxSize(this.boxSize);
         }

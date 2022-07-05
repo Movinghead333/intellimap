@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class IntellimapBox {
+public class Box {
     protected int width;
     protected int height;
     protected Texture2D texture;
@@ -13,10 +13,10 @@ public class IntellimapBox {
     protected Color backgroundColor;
     protected Color borderColor;
 
-    protected IntellimapBox()
+    protected Box()
         : this(10, 10, Color.clear, Color.clear, Color.clear) {}
 
-    protected IntellimapBox(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor) {
+    protected Box(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor) {
         this.width = width;
         this.height = height;
 
@@ -24,6 +24,7 @@ public class IntellimapBox {
 
         style = new GUIStyle();
         style.normal.background = texture;
+        style.normal.textColor = Color.white;
         style.fixedWidth = width;
         style.fixedHeight = height;
 
@@ -50,6 +51,10 @@ public class IntellimapBox {
 
     public virtual void SetText(string text) {
         content.text = text;
+    }
+
+    public virtual void SetAlpha(float alpha) {
+        foregroundColor = new Color(foregroundColor.r, foregroundColor.g, foregroundColor.b, alpha);
     }
 
     protected bool DrawBorder(int x, int y) {
