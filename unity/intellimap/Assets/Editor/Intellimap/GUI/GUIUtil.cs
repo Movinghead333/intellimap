@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-public class IntellimapGUIUtil {
+public class GUIUtil {
     public static void HorizontalLine(Color color, int leftMargin = 0, int rightMargin = 0, int topMargin = 10, int bottomMargin = 10) {
         GUIStyle horizontalLine = new GUIStyle();
         horizontalLine.normal.background = EditorGUIUtility.whiteTexture;

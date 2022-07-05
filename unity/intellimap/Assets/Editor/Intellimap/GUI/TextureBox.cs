@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public class IntellimapTextureBox : IntellimapBox {
+public class TextureBox : Box {
     private Texture2D externalTexture;
     private Rect externalTextureRect;
 
-    public IntellimapTextureBox(Color backgroundColor, Color borderColor)
+    public TextureBox(Color backgroundColor, Color borderColor)
         : this(10, 10, backgroundColor, borderColor) {}
     
-    public IntellimapTextureBox(int width, int height, Color backgroundColor, Color borderColor)
+    public TextureBox(int width, int height, Color backgroundColor, Color borderColor)
         : base(width, height, Color.clear, backgroundColor, borderColor)
     {
         externalTexture = null;
