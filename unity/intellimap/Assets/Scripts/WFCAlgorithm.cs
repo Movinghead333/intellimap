@@ -4,12 +4,6 @@ using UnityEngine;
 
 public class WFCAlgorithm
 {
-    static Vector2Int[] offsets = new Vector2Int[] {
-        new Vector2Int(0, 1),
-        new Vector2Int(1, 0),
-        new Vector2Int(0, -1),
-        new Vector2Int(-1, 0),
-    };
 
     // 2D array of the final generated tileIds
     static int?[,] resultTilemap;
@@ -44,10 +38,10 @@ public class WFCAlgorithm
 
             Vector2Int tileToCollapse = tileToCollapseNullable.Value;
 
-            Debug.Log("Collapsing cell " + tileToCollapse);
+            //Debug.Log("Collapsing cell " + tileToCollapse);
 
             List<int> possibleTilesIds = new List<int>();
-            for (int t = 0; t < tileDomains.GetLength(2); t++)
+            for (int t = 0; t < wfcInput.numberOfTileTypes; t++)
             {
                 if (tileDomains[tileToCollapse.x, tileToCollapse.y, t])
                     possibleTilesIds.Add(t);
@@ -55,50 +49,125 @@ public class WFCAlgorithm
 
             int randomIndex = Random.Range(0, possibleTilesIds.Count);
             int tileId = possibleTilesIds[randomIndex];
+
+            // Update the domain to reflect the collapse in preparation for the propagation step
+            for (int t = 0; t < wfcInput.numberOfTileTypes; t++)
+            {
+                tileDomains[tileToCollapse.x, tileToCollapse.y, t] = t == tileId;
+            }
+
             resultTilemap[tileToCollapse.x, tileToCollapse.y] = tileId;
 
             // Propagate Changes to all uncollapsed cells
-            Queue<(Vector2Int, Vector2Int)> positionsToCheck = new Queue<(Vector2Int, Vector2Int)>();
-            for (int i = 0; i < offsets.Length; i++)
-            {
-                Vector2Int targetPosition = tileToCollapse + offsets[i];
-                if (targetPosition.x < 0 || targetPosition.y < 0 || targetPosition.x >= wfcInput.mapSize.x || targetPosition.y >= wfcInput.mapSize.y)
-                {
-                    continue;
-                }
+            PropagateConstraints(tileToCollapse);
 
-                positionsToCheck.Enqueue((tileToCollapse, offsets[i]));
-            }
-
-            while (positionsToCheck.Count > 0)
-            {
-                (Vector2Int nextPosition, Vector2Int offset) = positionsToCheck.Dequeue();
-                Vector2Int targetPosition = nextPosition + offset;
-
-                int dirIndex = 0;
-                for (int i = 0; i < offsets.Length; i++)
-                {
-                    if (offset == offsets[i])
-                    {
-                        dirIndex = i;
-                        break;
-                    }
-                }
-
-
-                for (int i = 0; i < wfcInput.numberOfTileTypes; i++)
-                {
-                    bool connectionAllowed = wfcInput.adjacencyConstraint[tileId, i, dirIndex];
-
-                    if (!connectionAllowed)
-                    {
-                        tileDomains[targetPosition.x, targetPosition.y, i] = false;
-                    }
-                }
-            }
+            //Debug.Log(EntropyMatrixToString());
         }
 
         return new WFCOutput(resultTilemap);
+    }
+
+    // Propagate the domain-changes caused by a cell-collapse towards the rest
+    // of the tiles.
+    private static void PropagateConstraints(Vector2Int collapsedTile)
+    {
+        // We have to track which uncollapsed cells habe already been used for
+        // propagation in order to avoid "going backwards" and thus visiting
+        // cells twice
+        bool[,] visitedTiles = new bool[wfcInput.mapSize.x, wfcInput.mapSize.y];
+        for (int x = 0; x < wfcInput.mapSize.x; x++)
+            for (int y = 0; y < wfcInput.mapSize.y; y++)
+                visitedTiles[x, y] = false;
+
+        // We keep a set for the currentWave which we iterate through and
+        // propagate changes to other tiles
+        HashSet<Vector2Int> currentWave = new();
+
+        // All tiles which we have not yet visited and are candidates for
+        // future propagation are inserted into this set which will then
+        // become the next currentWave
+        HashSet<Vector2Int> nextWave = new();
+
+        // As an entrypoint we add the tile which we just collapsed in the
+        // current iteration of the WFC algorithm
+        currentWave.Add(collapsedTile);
+
+        // As long as their candidates left for propagation
+        while (currentWave.Count > 0)
+        {
+            // Go through all candidates for propagation in the current wave
+            foreach (Vector2Int positionToPropagate in currentWave)
+            {
+                // Set the currently checked position as visited to avoid
+                // looking at tiles twice
+                visitedTiles[positionToPropagate.x, positionToPropagate.y] = true;
+
+                // Go over the four directions and thus the neighbouring cells
+                // whose domain we might want to change
+                for (int d = 0; d < Directions.directions.Length; d++)
+                {
+                    // Determine the position of the neighbouring cell
+                    Vector2Int direction = Directions.directions[d];
+                    Vector2Int targetPosition = positionToPropagate + direction;
+
+                    // Check if the tile tile we want to propagate to...
+                    // ... is within the map bounds
+                    // ... has not been collapsed yet
+                    // ... and has not been visited yet by the propagation
+                    //     algorithm
+                    if (!LocationOutOfMapBounds(targetPosition) &&
+                        resultTilemap[targetPosition.x, targetPosition.y] == null &&
+                        !visitedTiles[targetPosition.x, targetPosition.y])
+                    {
+                        // Track if the tile actually changes because if it
+                        // does not we can skip looking at it and reduce
+                        // runtime this way
+                        bool targetTileChanged = false;
+
+                        // In this array we collect the possibilities resulting
+                        // from the current tile's domain
+                        bool[] tempStates = new bool[wfcInput.numberOfTileTypes];
+                        for (int j = 0; j < wfcInput.numberOfTileTypes; j++)
+                            tempStates[j] = false;
+
+                        // Now go through the domain of the currently checked tile
+                        for (int i = 0; i < wfcInput.numberOfTileTypes; i++)
+                        {
+                            // If the tile is within the domain of the currently checked tile
+                            // then also check its implications on the neighbouring cells
+                            // regarding the set of constraints
+                            if (tileDomains[positionToPropagate.x, positionToPropagate.y, i])
+                            {
+                                for (int j = 0; j < wfcInput.numberOfTileTypes; j++)
+                                {
+                                    bool connectionAllowed = wfcInput.adjacencyConstraint[i, j, d];
+
+                                    targetTileChanged = true;
+                                    // We or here to get the union of all tiles possible coming from the
+                                    // set of constraints enabled by the domain of the currently checked tile
+                                    tempStates[j] = tempStates[j] || connectionAllowed; // TODO: detect flip in flag
+                                }
+                            }
+                        }
+
+                        // We then and the result of allowed tiles from the propagation with the current state of the neighbouring tile's domain
+                        for (int j = 0; j < wfcInput.numberOfTileTypes; j++)
+                            tileDomains[targetPosition.x, targetPosition.y, j] = tileDomains[targetPosition.x, targetPosition.y, j] && tempStates[j];
+                        // TODO: check for chane in tile domain here
+
+                        // If the tile did in fact change, then we have to see if there are further implications
+                        if (targetTileChanged)
+                        {
+                            nextWave.Add(targetPosition);
+                        }
+                    }
+                }
+            }
+
+            // Prepare the following currentWave by shifting over the tiles in nextWave and reset nextWAve
+            currentWave = nextWave;
+            nextWave = new HashSet<Vector2Int>();
+        }
     }
 
     private static Vector2Int? FindMinimumEntropyCell()
@@ -139,5 +208,29 @@ public class WFCAlgorithm
         {
             return null;
         } 
+    }
+
+    private static bool LocationOutOfMapBounds(Vector2Int location)
+    {
+        return location.x < 0 || location.y < 0 || location.x >= wfcInput.mapSize.x || location.y >= wfcInput.mapSize.y;
+    }
+
+    // Print the current entropy of all tiles as matrix
+    private static string EntropyMatrixToString()
+    {
+        string result = "";
+        for (int y = 0; y < wfcInput.mapSize.y; y++)
+        {
+            for (int x = 0; x < wfcInput.mapSize.x; x++)
+            {
+                int entropy = 0;
+                for (int t = 0; t < wfcInput.numberOfTileTypes; t++)
+                    entropy += tileDomains[x, y, t] ? 1 : 0;
+                result += entropy + ", ";
+            }
+            result += "\n";
+        }
+
+        return result;     
     }
 }

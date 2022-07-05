@@ -2,33 +2,38 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Tilemaps;
+using System;
 
-// TODO: Allow control over boxes from outside
 public class IntellimapMatrix {
     private EditorWindow parentWindow;
     private float lastWindowWidth;
     private float lastWindowHeight;
 
     private int size;
-    private float spaceBetweenBoxes;
     private float maxPercentageOfWindowHeight;
+    private int boxSize;
+    private int minBoxSize;
 
-    private List<IntellimapDraggableBox> boxes;
+    private IntellimapWeightBox[] boxes;
+
+    private IntellimapTextureBox axisTitleBox;
+    private IntellimapTextureBox[] axisBoxes;
 
     public IntellimapMatrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor,
-                            float maxPercentageOfWindowHeight, EditorWindow parentWindow)
+                            float maxPercentageOfWindowHeight, int minBoxSize, EditorWindow parentWindow)
     {
         this.parentWindow = parentWindow;
         lastWindowWidth = parentWindow.position.width;
         lastWindowHeight = parentWindow.position.height;
 
         this.size = size;
-        spaceBetweenBoxes = 0;
         this.maxPercentageOfWindowHeight = maxPercentageOfWindowHeight;
+        this.minBoxSize = minBoxSize;
 
-        boxes = new List<IntellimapDraggableBox>();
+        boxes = new IntellimapWeightBox[size * size];
         for (int i = 0; i < size * size; i++) {
-            boxes.Add(new IntellimapDraggableBox(foregroundColor, backgroundColor, borderColor, parentWindow));
+            boxes[i] = new IntellimapWeightBox(foregroundColor, backgroundColor, borderColor, parentWindow);
         }
 
         for (int y = 0; y < size; y++) {
@@ -41,24 +46,41 @@ public class IntellimapMatrix {
             }
         }
 
+        axisTitleBox = new IntellimapTextureBox(backgroundColor, borderColor);
+        //axisTitleBox.SetText("Weights");
+
+        axisBoxes = new IntellimapTextureBox[size];
+        for (int i = 0; i < axisBoxes.Length; i++) {
+            axisBoxes[i] = new IntellimapTextureBox(backgroundColor, borderColor);
+        }
+
         UpdateBoxSize();
     }
 
     public void Show() {
         HandleWindowResize();
 
-        for (int y = 0; y < size; y++) {
-            GUILayout.Space(spaceBetweenBoxes);
+        GUILayout.BeginHorizontal();
+        GUILayout.Space(15);
+        axisTitleBox.Show();
+        for (int x = 0; x < size; x++) {
+            axisBoxes[x].Show();
+        }
+        GUILayout.EndHorizontal();
 
+        for (int y = 0; y < size; y++) {
             GUILayout.BeginHorizontal();
             
             GUILayout.Space(15);
 
-            for (int x = 0; x < size; x++) {
-                int index = y * size + x;
-                boxes[index].Show();
-
-                GUILayout.Space(spaceBetweenBoxes);
+            for (int x = -1; x < size; x++) {
+                if (x == -1) {
+                    axisBoxes[y].Show();
+                }
+                else {
+                    int index = y * size + x;
+                    boxes[index].Show();
+                }
             }
 
             GUILayout.EndHorizontal();
@@ -66,13 +88,34 @@ public class IntellimapMatrix {
     }
 
     public void SetBoxSize(int boxSize) {
-        for (int i = 0; i < boxes.Count; i++) {
+        for (int i = 0; i < boxes.Length; i++) {
             boxes[i].Resize(boxSize, boxSize);
+        }
+        
+        axisTitleBox.Resize(boxSize, boxSize);
+        for (int i = 0; i < axisBoxes.Length; i++) {
+            axisBoxes[i].Resize(boxSize, boxSize);
         }
     }
 
     public int GetSize() {
         return size;
+    }
+
+    public void SetAxisTiles(Tile[] tiles) {
+        if (tiles.Length != axisBoxes.Length) {
+            throw new ArgumentException("Array lengths don't match");
+        }
+
+        for (int i = 0; i < tiles.Length; i++) {
+            if (tiles[i] != null) {
+                Sprite sprite = tiles[i].sprite;
+                axisBoxes[i].SetTexture(sprite.texture, sprite.textureRect);
+            }
+            else {
+                axisBoxes[i].SetTexture(null, new Rect());
+            }
+        }
     }
 
     private void HandleWindowResize() {
@@ -89,21 +132,28 @@ public class IntellimapMatrix {
         float windowHeight = parentWindow.position.height;
         float maxAllowedHeight = maxPercentageOfWindowHeight * windowHeight;
 
-        float blockSizeInclSpace;
+        int sizeInclAxes = size + 1;
+
+        int boxSize;
         if (maxAllowedHeight < windowWidth) {
-            blockSizeInclSpace = maxAllowedHeight / size;
+            boxSize = (int)maxAllowedHeight / sizeInclAxes;
         }
         else {
-            blockSizeInclSpace = windowWidth / size;
+            boxSize = (int)windowWidth / sizeInclAxes;
         }
 
-        // (size-1) instead of size, because this way the boxes add up to be just slightly smaller than the full window width,
-        // which makes it so that it doesn't constantly trigger the horizontal scrollbar
-        // and also makes some space for the vertical scrollbar on the right.
-        float accountingForLastSpace = spaceBetweenBoxes / (size-1);
-        int boxSize = (int)(blockSizeInclSpace - spaceBetweenBoxes - accountingForLastSpace);
+        // 2*15 for the hardcoded space in Show() and 5 for a potential scrollbar on the right
+        float correctingForSpace = 35.0f / sizeInclAxes;
+        boxSize -= (int)correctingForSpace;
 
-        SetBoxSize(boxSize);
+        if (boxSize < minBoxSize) {
+            boxSize = minBoxSize;
+        }
+
+        if (boxSize != this.boxSize) {
+            this.boxSize = boxSize;
+            SetBoxSize(this.boxSize);
+        }
     }
 
     private bool WindowSizeChanged() {
