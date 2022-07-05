@@ -4,12 +4,6 @@ using UnityEngine;
 
 public class WFCAlgorithm
 {
-    static Vector2Int[] directions = new Vector2Int[] {
-        new Vector2Int(0, 1),
-        new Vector2Int(1, 0),
-        new Vector2Int(0, -1),
-        new Vector2Int(-1, 0),
-    };
 
     // 2D array of the final generated tileIds
     static int?[,] resultTilemap;
@@ -110,10 +104,10 @@ public class WFCAlgorithm
 
                 // Go over the four directions and thus the neighbouring cells
                 // whose domain we might want to change
-                for (int d = 0; d < directions.Length; d++)
+                for (int d = 0; d < Directions.directions.Length; d++)
                 {
                     // Determine the position of the neighbouring cell
-                    Vector2Int direction = directions[d];
+                    Vector2Int direction = Directions.directions[d];
                     Vector2Int targetPosition = positionToPropagate + direction;
 
                     // Check if the tile tile we want to propagate to...
