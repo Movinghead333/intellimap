@@ -4,6 +4,9 @@ using UnityEditor;
 using UnityEngine.Tilemaps;
 
 public class IntellimapEditor : EditorWindow {
+    private static bool T = true;
+    private static bool F = false;
+
     private TileBase testTile;
 
     private Vector2 scrollPos;
@@ -17,6 +20,8 @@ public class IntellimapEditor : EditorWindow {
 
     private Matrix matrix;
     private Histogram histogram;
+
+    private TilemapStats tilemapStats;
     
     // Register window as menu item
     [MenuItem ("Window/Intellimap")]
@@ -70,6 +75,7 @@ public class IntellimapEditor : EditorWindow {
             if (GUILayout.Button("Analyze Base Data")) {
                 TilemapStats tilemapStats = DataUtil.LoadTilemapStats("Tilemaps/TestTilemap");
                 Debug.Log(tilemapStats);
+                this.tilemapStats = tilemapStats;
 
                 // Re-initialize matrix
                 Tile[] axisTiles = new Tile[tilemapStats.tileCount];
@@ -105,20 +111,31 @@ public class IntellimapEditor : EditorWindow {
             GUIUtil.HorizontalLine(Color.grey);
 
             if (GUILayout.Button("Generate")) {
-                List<float> histogramValues = histogram.GetSliderValues();
-                string output = "";
-                for (int i = 0; i < histogramValues.Count; i++) {
-                    output += histogramValues[i] + " ";
-                }
-                //string output = draggableBox.GetPercentage().ToString();
-            
-                ShowNotification(new GUIContent(output));
-
-                if (targetTilemap != null && testTile != null) {
-                    targetTilemap.SetTile(new Vector3Int(0, 0), testTile);
-                }
+                GenerateButtonPressed();
             }
         EditorGUILayout.EndScrollView();
     }
 
+    // Render the resulting tileIdMatrix to the selected Tilemap
+    private void Render(int?[,] tileIdsMatrix)
+    {
+        for (int x = 0; x < tileIdsMatrix.GetLength(0); x++)
+            for (int y = 0; y < tileIdsMatrix.GetLength(1); y++)
+                if (tileIdsMatrix[x, y].HasValue)
+                    targetTilemap.SetTile(new Vector3Int(x, y, 0), tilemapStats.idToTile[tileIdsMatrix[x, y].Value]);
+
+    }
+
+    // Execute the Wave Function Collapse Algorithm with the current set of input data
+    public void GenerateButtonPressed()
+    {
+        if (targetTilemap == null || tilemapStats == null)
+            return;
+
+        WFCAlgorithm waveFunctionCollapse = new WFCAlgorithm(tilemapStats, new Vector2Int(targetWidth, targetHeight));
+
+        int?[,] tileIdsMatrix = waveFunctionCollapse.Run();
+
+        Render(tileIdsMatrix);
+    }
 }
