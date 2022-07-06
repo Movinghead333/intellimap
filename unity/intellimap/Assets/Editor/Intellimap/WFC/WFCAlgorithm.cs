@@ -4,31 +4,41 @@ using UnityEngine;
 
 public class WFCAlgorithm
 {
+    private TilemapStats tilemapStats;
+
+    private Vector2Int outputMapSize;
 
     // 2D array of the final generated tileIds
-    static int?[,] resultTilemap;
-
-    static WFCInput wfcInput;
+    int?[,] resultTilemap;
 
     // bool array for each tile storing the options left for this tile
-    static bool[,,] tileDomains;
+    bool[,,] tileDomains;
 
-    public static WFCOutput Compute(WFCInput pWFCInput)
+    public WFCAlgorithm(TilemapStats tilemapStats, Vector2Int outputMapSize)
     {
-        wfcInput = pWFCInput;
+        this.tilemapStats = tilemapStats;
+        this.outputMapSize = outputMapSize;
+    }
 
+    public int?[,] Run()
+    {
         // Init the result based on the desired mapSize
-        resultTilemap = new int?[wfcInput.mapSize.x, wfcInput.mapSize.y];
-        tileDomains = new bool[wfcInput.mapSize.x, wfcInput.mapSize.y, wfcInput.numberOfTileTypes];
+        resultTilemap = new int?[outputMapSize.x, outputMapSize.y];
+        tileDomains = new bool[outputMapSize.x, outputMapSize.y, tilemapStats.tileCount];
 
-        for (int x = 0; x < wfcInput.mapSize.x; x++)
-            for (int y = 0; y < wfcInput.mapSize.y; y++)
-                for (int t = 0; t < wfcInput.numberOfTileTypes; t++)
+        for (int x = 0; x < outputMapSize.x; x++)
+            for (int y = 0; y < outputMapSize.y; y++)
+                for (int t = 0; t < tilemapStats.tileCount; t++)
                     tileDomains[x, y, t] = true;
+
+        int counter = 0;
+        int tilesToCollapse = outputMapSize.x * outputMapSize.y;
         
         // While uncollapsed cells remain, continue with collpasing cells
-        while(true)
+        while(counter < tilesToCollapse)
         {
+            counter++;
+
             // Collapse cell with lowest entropy
             Vector2Int? tileToCollapseNullable = FindMinimumEntropyCell();
 
@@ -41,22 +51,28 @@ public class WFCAlgorithm
             //Debug.Log("Collapsing cell " + tileToCollapse);
 
             List<int> possibleTilesIds = new List<int>();
-            for (int t = 0; t < wfcInput.numberOfTileTypes; t++)
+            for (int t = 0; t < tilemapStats.tileCount; t++)
             {
                 if (tileDomains[tileToCollapse.x, tileToCollapse.y, t])
                     possibleTilesIds.Add(t);
             }
 
             int randomIndex = Random.Range(0, possibleTilesIds.Count);
-            int tileId = possibleTilesIds[randomIndex];
+            int tileId = -1;
+
+            if (possibleTilesIds.Count > 0)
+            {
+                tileId = possibleTilesIds[randomIndex];
+            }
 
             // Update the domain to reflect the collapse in preparation for the propagation step
-            for (int t = 0; t < wfcInput.numberOfTileTypes; t++)
+            for (int t = 0; t < tilemapStats.tileCount; t++)
             {
                 tileDomains[tileToCollapse.x, tileToCollapse.y, t] = t == tileId;
             }
 
-            resultTilemap[tileToCollapse.x, tileToCollapse.y] = tileId;
+            resultTilemap[tileToCollapse.x, tileToCollapse.y] = tileId != -1 ? tileId : null;
+
 
             // Propagate Changes to all uncollapsed cells
             PropagateConstraints(tileToCollapse);
@@ -64,19 +80,19 @@ public class WFCAlgorithm
             //Debug.Log(EntropyMatrixToString());
         }
 
-        return new WFCOutput(resultTilemap);
+        return resultTilemap;
     }
 
     // Propagate the domain-changes caused by a cell-collapse towards the rest
     // of the tiles.
-    private static void PropagateConstraints(Vector2Int collapsedTile)
+    private void PropagateConstraints(Vector2Int collapsedTile)
     {
         // We have to track which uncollapsed cells habe already been used for
         // propagation in order to avoid "going backwards" and thus visiting
         // cells twice
-        bool[,] visitedTiles = new bool[wfcInput.mapSize.x, wfcInput.mapSize.y];
-        for (int x = 0; x < wfcInput.mapSize.x; x++)
-            for (int y = 0; y < wfcInput.mapSize.y; y++)
+        bool[,] visitedTiles = new bool[outputMapSize.x, outputMapSize.y];
+        for (int x = 0; x < outputMapSize.x; x++)
+            for (int y = 0; y < outputMapSize.y; y++)
                 visitedTiles[x, y] = false;
 
         // We keep a set for the currentWave which we iterate through and
@@ -126,21 +142,21 @@ public class WFCAlgorithm
 
                         // In this array we collect the possibilities resulting
                         // from the current tile's domain
-                        bool[] tempStates = new bool[wfcInput.numberOfTileTypes];
-                        for (int j = 0; j < wfcInput.numberOfTileTypes; j++)
+                        bool[] tempStates = new bool[tilemapStats.tileCount];
+                        for (int j = 0; j <tilemapStats.tileCount; j++)
                             tempStates[j] = false;
 
                         // Now go through the domain of the currently checked tile
-                        for (int i = 0; i < wfcInput.numberOfTileTypes; i++)
+                        for (int i = 0; i < tilemapStats.tileCount; i++)
                         {
                             // If the tile is within the domain of the currently checked tile
                             // then also check its implications on the neighbouring cells
                             // regarding the set of constraints
                             if (tileDomains[positionToPropagate.x, positionToPropagate.y, i])
                             {
-                                for (int j = 0; j < wfcInput.numberOfTileTypes; j++)
+                                for (int j = 0; j < tilemapStats.tileCount; j++)
                                 {
-                                    bool connectionAllowed = wfcInput.adjacencyConstraint[i, j, d];
+                                    bool connectionAllowed = tilemapStats.totalAdjacency[i, j, d] > 0 ;
 
                                     targetTileChanged = true;
                                     // We or here to get the union of all tiles possible coming from the
@@ -151,7 +167,7 @@ public class WFCAlgorithm
                         }
 
                         // We then and the result of allowed tiles from the propagation with the current state of the neighbouring tile's domain
-                        for (int j = 0; j < wfcInput.numberOfTileTypes; j++)
+                        for (int j = 0; j < tilemapStats.tileCount; j++)
                             tileDomains[targetPosition.x, targetPosition.y, j] = tileDomains[targetPosition.x, targetPosition.y, j] && tempStates[j];
                         // TODO: check for chane in tile domain here
 
@@ -170,7 +186,7 @@ public class WFCAlgorithm
         }
     }
 
-    private static Vector2Int? FindMinimumEntropyCell()
+    private Vector2Int? FindMinimumEntropyCell()
     {
         List<Vector2Int> minimumEntropyTiles = new List<Vector2Int>();
         int minimumEntropy = int.MaxValue;
@@ -210,21 +226,21 @@ public class WFCAlgorithm
         } 
     }
 
-    private static bool LocationOutOfMapBounds(Vector2Int location)
+    private bool LocationOutOfMapBounds(Vector2Int location)
     {
-        return location.x < 0 || location.y < 0 || location.x >= wfcInput.mapSize.x || location.y >= wfcInput.mapSize.y;
+        return location.x < 0 || location.y < 0 || location.x >= outputMapSize.x || location.y >= outputMapSize.y;
     }
 
     // Print the current entropy of all tiles as matrix
-    private static string EntropyMatrixToString()
+    private string EntropyMatrixToString()
     {
         string result = "";
-        for (int y = 0; y < wfcInput.mapSize.y; y++)
+        for (int y = 0; y < outputMapSize.y; y++)
         {
-            for (int x = 0; x < wfcInput.mapSize.x; x++)
+            for (int x = 0; x < outputMapSize.x; x++)
             {
                 int entropy = 0;
-                for (int t = 0; t < wfcInput.numberOfTileTypes; t++)
+                for (int t = 0; t < tilemapStats.tileCount; t++)
                     entropy += tileDomains[x, y, t] ? 1 : 0;
                 result += entropy + ", ";
             }
