@@ -7,10 +7,22 @@ public class DetailViewSliderGroup : SliderGroup {
     private WeightBoxDetailView detailView;
 
 
-    public DetailViewSliderGroup(int numSliders, int height, WeightBoxDetailView detailView)
-        : base(numSliders, height)
+    public DetailViewSliderGroup(int height, WeightBoxDetailView detailView)
+        : base(4, Color.clear, Color.clear, height)
     {
         this.detailView = detailView;
+        
+        Texture2D rightArrowTexture = Resources.Load("Arrow_right") as Texture2D;
+        Texture2D leftArrowTexture = Resources.Load("Arrow_left") as Texture2D;
+        Texture2D upArrowTexture = Resources.Load("Arrow_up") as Texture2D;
+        Texture2D downArrowTexture = Resources.Load("Arrow_down") as Texture2D;
+
+        Rect textureRect = new Rect(0, 0, rightArrowTexture.width, rightArrowTexture.height);
+
+        textureBoxes[0].SetTexture(upArrowTexture, textureRect);
+        textureBoxes[1].SetTexture(rightArrowTexture, textureRect);
+        textureBoxes[2].SetTexture(downArrowTexture, textureRect);
+        textureBoxes[3].SetTexture(leftArrowTexture, textureRect);
     }
 
     public void SetWeightBox(WeightBox box) {
@@ -19,6 +31,7 @@ public class DetailViewSliderGroup : SliderGroup {
     }
 
     protected override void ReactToSliderChange(int changedSliderIndex, float newSliderValue) {
+        base.ReactToSliderChange(changedSliderIndex, newSliderValue);
         detailView.UpdateFromSliders(GetSliderValues().ToArray());
     }
 }

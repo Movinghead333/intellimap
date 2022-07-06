@@ -9,34 +9,82 @@ public class SliderGroup {
     protected int height;
     protected List<float> sliderValues;
 
-    public SliderGroup(int numSliders)
-        : this(numSliders, 100) {}
+    protected List<TextureBox> textBoxes;
+    protected List<TextureBox> textureBoxes;
+    Color boxesBackgroundColor;
+    Color boxesBorderColor;
 
-    public SliderGroup(int numSliders, int height) {
-        this.numSliders = numSliders;
+    float space;
+
+    public SliderGroup(int numSliders, Color boxesBackgroundColor, Color boxesBorderColor, int height = 100) {
+        this.boxesBackgroundColor = boxesBackgroundColor;
+        this.boxesBorderColor = boxesBorderColor;
         this.height = height;
+        
+        // the slider Width is 2.
+        // the box Width is 20.
+        space = (20 - 2) / 2;
+
+        Init(numSliders);
+    }
+
+    public void Init(int numSliders) {
+        this.numSliders = numSliders;
 
         sliderValues = new List<float>();
         for (int i = 0; i < numSliders; i++) {
             sliderValues.Add(0f);
         }
+
+        textureBoxes = new List<TextureBox>();
+        for (int i = 0; i < numSliders; i++) {
+            TextureBox b = new TextureBox(20, 20, boxesBackgroundColor, boxesBorderColor);
+            textureBoxes.Add(b);
+        }
+
+        textBoxes = new List<TextureBox>();
+        for (int i = 0; i < numSliders; i++) {
+            TextureBox b = new TextureBox(20, 20, boxesBackgroundColor, Color.clear);
+            b.SetContentOffset(2f, 3f);
+            textBoxes.Add(b);
+        }
     }
 
     public virtual void Show() {
+        EditorGUILayout.BeginVertical();
+
         EditorGUILayout.BeginHorizontal();
-
-        for (int i = 0; i < numSliders; i++) {
-            GUILayout.Space(15);
-
-            float newSliderValue = GUILayout.VerticalSlider(sliderValues[i], 1f, 0f, GUILayout.Height(height));
-            if (newSliderValue != sliderValues[i]) {
-                ReactToSliderChange(i, newSliderValue);
-
-                sliderValues[i] = newSliderValue;
+            GUILayout.Space(space/2);
+            for (int i = 0; i < numSliders; i++) {
+                textBoxes[i].Show();
             }
-        }
-
         EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal();
+            for (int i = 0; i < numSliders; i++) {
+                GUILayout.Space(space);
+
+                float newSliderValue = GUILayout.VerticalSlider(sliderValues[i], 1f, 0f, GUILayout.Height(height));
+                //float sliderWidth = GUILayoutUtility.GetLastRect().width;
+                //newSliderValue = RoundOnEdge(newSliderValue);
+                if (newSliderValue != sliderValues[i]) {
+                    ReactToSliderChange(i, newSliderValue);
+                    sliderValues[i] = newSliderValue;
+                    UpdateTextBoxes();
+                }
+
+                GUILayout.Space(space);
+            }
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(space/2);
+            for (int i = 0; i < numSliders; i++) {
+                textureBoxes[i].Show();
+            }
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.EndVertical();
     }
 
     public List<float> GetSliderValues() {
@@ -45,23 +93,44 @@ public class SliderGroup {
 
     public virtual void SetSliderValues(float[] newSliderValues) {
         if (sliderValues.Count != newSliderValues.Length) {
-            throw new ArgumentException("SliderGroup: SetSliderValues: Lenghts don't match");
+            throw new ArgumentException("SliderGroup: SetSliderValues: Lengths don't match");
         }
 
         for (int i = 0; i < numSliders; i++) {
             sliderValues[i] = newSliderValues[i];
         }
+
+        UpdateTextBoxes();
     }
 
     public virtual void SetSliderValues(List<float> newSliderValues) {
         if (sliderValues.Count != newSliderValues.Count) {
-            throw new ArgumentException("SliderGroup: SetSliderValues: Lenghts don't match");
+            throw new ArgumentException("SliderGroup: SetSliderValues: Lengths don't match");
         }
 
         sliderValues = new List<float>(newSliderValues);
+
+        UpdateTextBoxes();
     }
 
     protected virtual void ReactToSliderChange(int changedSliderIndex, float newSliderValue) {}
+
+    protected void UpdateTextBoxes() {
+        for (int i = 0; i < numSliders; i++) {
+            float value = sliderValues[i];
+            string valueString = value.ToString();
+            int stringLength = 3;
+            if (valueString.Length > stringLength) {
+                valueString = valueString.Substring(1, stringLength);
+            }
+            else if (valueString.Length > 1) {
+                valueString = valueString.Substring(1);
+            }
+            valueString = valueString.Replace(',', '.');
+
+            textBoxes[i].SetText(valueString);
+        }
+    }
 
     protected float RoundOnEdge(float f) {
         if (f < 0.001) {

@@ -14,6 +14,7 @@ public class TextureBox : Box {
         : base(width, height, Color.clear, backgroundColor, borderColor)
     {
         externalTexture = null;
+        UpdateTexture();
     }
 
     public override void Show() {

@@ -12,7 +12,6 @@ public class IntellimapEditor : EditorWindow {
     private int targetWidth;
     private int targetHeight;
 
-    private Tilemap tilePalette;
     private string baseDataPath;
 
     private Matrix matrix;
@@ -39,7 +38,7 @@ public class IntellimapEditor : EditorWindow {
         Color backgroundColor = new Color(0.2f, 0.2f, 0.2f);
         matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, 0.5f, 30, this);
         
-        histogram = new Histogram(4);
+        histogram = new Histogram(2);
     }
 
     // Window GUI code
@@ -52,8 +51,6 @@ public class IntellimapEditor : EditorWindow {
             targetHeight = EditorGUILayout.IntField("Height:", targetHeight);
 
             GUIUtil.HorizontalLine(Color.grey);
-
-            tilePalette = (Tilemap)EditorGUILayout.ObjectField("Tile Palette:", tilePalette, typeof(Tilemap), true);
 
             EditorGUILayout.BeginHorizontal();
                 baseDataPath = EditorGUILayout.TextField("Base data:", baseDataPath);
@@ -94,6 +91,11 @@ public class IntellimapEditor : EditorWindow {
                         }
                     }
                 }
+
+                // Re-initialize histogram
+                histogram.Init(tilemapStats.tileCount);
+                histogram.SetBottomTiles(axisTiles);
+                histogram.SetSliderValues(tilemapStats.tileFrequencies);
             }
 
             matrix.Show();
