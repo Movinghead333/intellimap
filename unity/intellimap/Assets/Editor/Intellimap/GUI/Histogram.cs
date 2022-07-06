@@ -14,7 +14,7 @@ public class Histogram : SliderGroup {
         for (int i = 0; i < size; i++) {
             sliderValues[i] = 1f / size;
         }
-        
+
         UpdateTextBoxes();
     }
 
@@ -22,8 +22,6 @@ public class Histogram : SliderGroup {
         AdjustOtherSliders(changedSliderIndex, newSliderValue);
     }
 
-    // TODO: Here is a bug! With 4 sliders, when the one is dragged up all the way, at 95% the others are already 0.
-    // Then, when it is dragged up the rest to 100, the others become NaN.
     private void AdjustOtherSliders(int changedSliderIndex, float newSliderValue) {
         float diff = newSliderValue - sliderValues[changedSliderIndex];
 

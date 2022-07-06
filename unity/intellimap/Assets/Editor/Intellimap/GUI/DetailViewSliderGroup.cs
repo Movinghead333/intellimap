@@ -6,7 +6,6 @@ public class DetailViewSliderGroup : SliderGroup {
     private WeightBox box;
     private WeightBoxDetailView detailView;
 
-
     public DetailViewSliderGroup(int height, WeightBoxDetailView detailView)
         : base(4, Color.clear, Color.clear, height)
     {

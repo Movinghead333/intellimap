@@ -11,20 +11,17 @@ public class SliderGroup {
 
     protected List<TextureBox> textBoxes;
     protected List<TextureBox> textureBoxes;
-    Color boxesBackgroundColor;
-    Color boxesBorderColor;
+    protected Color boxesBackgroundColor;
+    protected Color boxesBorderColor;
 
-    float space;
+    protected float startSpacing;
 
     public SliderGroup(int numSliders, Color boxesBackgroundColor, Color boxesBorderColor, int height = 100) {
         this.boxesBackgroundColor = boxesBackgroundColor;
         this.boxesBorderColor = boxesBorderColor;
         this.height = height;
+        startSpacing = 15;
         
-        // the slider Width is 2.
-        // the box Width is 20.
-        space = (20 - 2) / 2;
-
         Init(numSliders);
     }
 
@@ -51,16 +48,24 @@ public class SliderGroup {
     }
 
     public virtual void Show() {
+        // the slider Width is 2.
+        // the box Width is 20.
+        float space = (20 - 2) / 2;
+
         EditorGUILayout.BeginVertical();
 
         EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(space/2);
+            GUILayout.Space(startSpacing);
+
+            GUILayout.Space(4);
             for (int i = 0; i < numSliders; i++) {
                 textBoxes[i].Show();
             }
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(startSpacing);
+
             for (int i = 0; i < numSliders; i++) {
                 GUILayout.Space(space);
 
@@ -78,7 +83,9 @@ public class SliderGroup {
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(space/2);
+            GUILayout.Space(startSpacing);
+
+            GUILayout.Space(4);
             for (int i = 0; i < numSliders; i++) {
                 textureBoxes[i].Show();
             }

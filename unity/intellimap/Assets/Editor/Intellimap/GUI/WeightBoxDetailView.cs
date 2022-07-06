@@ -32,10 +32,7 @@ public class WeightBoxDetailView {
 
         if (foldedOut) {
             EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(15);
-
                 weightSliders.Show();
-
                 GUILayout.Space(15);
 
                 EditorGUILayout.BeginVertical();

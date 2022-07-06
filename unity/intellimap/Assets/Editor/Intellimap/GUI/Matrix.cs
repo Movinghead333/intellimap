@@ -26,6 +26,8 @@ public class Matrix {
     private TextureBox axisTitleBox;
     private TextureBox[] axisBoxes;
 
+    private float startSpacing;
+
     public Matrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor,
                             float maxPercentageOfWindowHeight, int minBoxSize, EditorWindow parentWindow)
     {
@@ -41,6 +43,8 @@ public class Matrix {
         this.foregroundColor = foregroundColor;
         this.backgroundColor = backgroundColor;
         this.borderColor = borderColor;
+
+        startSpacing = 15;
 
         Init(size);
     }
@@ -81,30 +85,30 @@ public class Matrix {
     public void Show() {
         HandleWindowResize();
 
-        GUILayout.Space(15);
+        GUILayout.Space(startSpacing);
+
         GUILayout.BeginHorizontal();
-        GUILayout.Space(15);
-        axisTitleBox.Show();
-        for (int x = 0; x < size; x++) {
-            axisBoxes[x].Show();
-        }
+            GUILayout.Space(startSpacing);
+
+            axisTitleBox.Show();
+            for (int x = 0; x < size; x++) {
+                axisBoxes[x].Show();
+            }
         GUILayout.EndHorizontal();
 
         for (int y = 0; y < size; y++) {
             GUILayout.BeginHorizontal();
-            
-            GUILayout.Space(15);
+                GUILayout.Space(startSpacing);
 
-            for (int x = -1; x < size; x++) {
-                if (x == -1) {
-                    axisBoxes[y].Show();
+                for (int x = -1; x < size; x++) {
+                    if (x == -1) {
+                        axisBoxes[y].Show();
+                    }
+                    else {
+                        int index = y * size + x;
+                        boxes[index].Show();
+                    }
                 }
-                else {
-                    int index = y * size + x;
-                    boxes[index].Show();
-                }
-            }
-
             GUILayout.EndHorizontal();
         }
 
