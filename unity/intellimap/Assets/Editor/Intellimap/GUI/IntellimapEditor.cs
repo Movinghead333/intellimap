@@ -3,7 +3,11 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Tilemaps;
 
+[ExecuteInEditMode]
 public class IntellimapEditor : EditorWindow {
+    private static bool T = true;
+    private static bool F = false;
+
     private TileBase testTile;
 
     private Vector2 scrollPos;
@@ -12,11 +16,14 @@ public class IntellimapEditor : EditorWindow {
     private int targetWidth;
     private int targetHeight;
 
-    private Tilemap tilePalette;
     private string baseDataPath;
 
     private Matrix matrix;
     private Histogram histogram;
+
+    private TilemapStats tilemapStats;
+
+    private WFCAlgorithm? currentWFCInstance;
     
     // Register window as menu item
     [MenuItem ("Window/Intellimap")]
@@ -39,7 +46,7 @@ public class IntellimapEditor : EditorWindow {
         Color backgroundColor = new Color(0.2f, 0.2f, 0.2f);
         matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, 0.5f, 30, this);
         
-        histogram = new Histogram(4);
+        histogram = new Histogram(2);
     }
 
     // Window GUI code
@@ -52,8 +59,6 @@ public class IntellimapEditor : EditorWindow {
             targetHeight = EditorGUILayout.IntField("Height:", targetHeight);
 
             GUIUtil.HorizontalLine(Color.grey);
-
-            tilePalette = (Tilemap)EditorGUILayout.ObjectField("Tile Palette:", tilePalette, typeof(Tilemap), true);
 
             EditorGUILayout.BeginHorizontal();
                 baseDataPath = EditorGUILayout.TextField("Base data:", baseDataPath);
@@ -70,6 +75,7 @@ public class IntellimapEditor : EditorWindow {
             if (GUILayout.Button("Analyze Base Data")) {
                 TilemapStats tilemapStats = DataUtil.LoadTilemapStats("Tilemaps/TestTilemap");
                 Debug.Log(tilemapStats);
+                this.tilemapStats = tilemapStats;
 
                 // Re-initialize matrix
                 Tile[] axisTiles = new Tile[tilemapStats.tileCount];
@@ -94,6 +100,11 @@ public class IntellimapEditor : EditorWindow {
                         }
                     }
                 }
+
+                // Re-initialize histogram
+                histogram.Init(tilemapStats.tileCount);
+                histogram.SetBottomTiles(axisTiles);
+                histogram.SetSliderValues(tilemapStats.tileFrequencies);
             }
 
             matrix.Show();
@@ -104,21 +115,87 @@ public class IntellimapEditor : EditorWindow {
 
             GUIUtil.HorizontalLine(Color.grey);
 
-            if (GUILayout.Button("Generate")) {
-                List<float> histogramValues = histogram.GetSliderValues();
-                string output = "";
-                for (int i = 0; i < histogramValues.Count; i++) {
-                    output += histogramValues[i] + " ";
-                }
-                //string output = draggableBox.GetPercentage().ToString();
-            
-                ShowNotification(new GUIContent(output));
+            if (GUILayout.Button("Collapse entire map")) {
+                CollapseEntireMapButtonPressed();
+            }
 
-                if (targetTilemap != null && testTile != null) {
-                    targetTilemap.SetTile(new Vector3Int(0, 0), testTile);
-                }
+            if (GUILayout.Button("Collapse single cell"))
+            {
+                SingleCellCollapseButtonPressed();
             }
         EditorGUILayout.EndScrollView();
     }
 
+    // Execute the Wave Function Collapse Algorithm with the current set of input data
+    private void CollapseEntireMapButtonPressed()
+    {
+        TryInitiliazeWFCInstance();
+
+        if (currentWFCInstance != null)
+        {
+            bool running = true;
+            while (running)
+            {
+                (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
+
+                if (result == null)
+                {
+                    currentWFCInstance = null;
+                    return;
+
+                }
+
+                RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
+            }
+        }
+
+        //int?[,] tileIdsMatrix = currentWFCInstance.RunCompleteCollapse();
+
+        //Render(tileIdsMatrix);
+
+        //currentWFCInstance = null;
+    }
+
+    private void SingleCellCollapseButtonPressed()
+    {
+        TryInitiliazeWFCInstance();
+
+        if (currentWFCInstance != null)
+        {
+            (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
+
+            if (result == null)
+            {
+                // Reset the WFC instance if we receive null as a result of single cell collapse
+                currentWFCInstance = null;
+            }
+            else
+            {
+                RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
+            }
+        }
+    }
+
+    private void TryInitiliazeWFCInstance()
+    {
+        if (targetTilemap == null || tilemapStats == null || currentWFCInstance != null)
+            return;
+
+        currentWFCInstance = new WFCAlgorithm(tilemapStats, new Vector2Int(targetWidth, targetHeight));
+    }
+
+    // Render the resulting tileIdMatrix to the selected Tilemap
+    private void Render(int?[,] tileIdsMatrix)
+    {
+        for (int x = 0; x < tileIdsMatrix.GetLength(0); x++)
+            for (int y = 0; y < tileIdsMatrix.GetLength(1); y++)
+                if (tileIdsMatrix[x, y].HasValue)
+                    RenderSingleCell(new Vector2Int(x, y), tileIdsMatrix[x, y].Value);
+
+    }
+
+    private void RenderSingleCell(Vector2Int tilePosition, int tileId)
+    {
+        targetTilemap.SetTile(new Vector3Int(tilePosition.x, tilePosition.y, 0), tilemapStats.idToTile[tileId]);
+    }
 }

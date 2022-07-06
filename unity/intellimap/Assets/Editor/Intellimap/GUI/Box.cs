@@ -25,6 +25,7 @@ public class Box {
         style = new GUIStyle();
         style.normal.background = texture;
         style.normal.textColor = Color.white;
+        style.fontSize = 10;
         style.fixedWidth = width;
         style.fixedHeight = height;
 
@@ -55,6 +56,10 @@ public class Box {
 
     public virtual void SetAlpha(float alpha) {
         foregroundColor = new Color(foregroundColor.r, foregroundColor.g, foregroundColor.b, alpha);
+    }
+
+    public virtual void SetContentOffset(float x, float y) {
+        style.contentOffset = new Vector2(x, y);
     }
 
     protected bool DrawBorder(int x, int y) {

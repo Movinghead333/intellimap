@@ -34,16 +34,16 @@ public class MatrixTestWindow : EditorWindow {
     }
 
     private void OnGUI() {
-        //EditorGUILayout.PropertyField(serializedProperty, true);
-        //serializedObject.ApplyModifiedProperties();
+        EditorGUILayout.PropertyField(serializedProperty, true);
+        serializedObject.ApplyModifiedProperties();
 
-        //if (GUILayout.Button("Set Axis Tiles")) {
-        //   matrix.SetAxisTiles(testTiles);
-        //}
+        if (GUILayout.Button("Set Axis Tiles")) {
+           matrix.SetAxisTiles(testTiles);
+        }
 
-        //GUILayout.Space(15);
+        GUILayout.Space(15);
 
-        //matrix.Show();
+        matrix.Show();
 
         GUIUtil.HorizontalLine(Color.grey);
 
