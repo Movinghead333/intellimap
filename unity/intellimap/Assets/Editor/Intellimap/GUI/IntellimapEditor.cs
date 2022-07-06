@@ -8,8 +8,6 @@ public class IntellimapEditor : EditorWindow {
     private static bool T = true;
     private static bool F = false;
 
-    private TileBase testTile;
-
     private Vector2 scrollPos;
 
     private Tilemap targetTilemap;
@@ -52,8 +50,6 @@ public class IntellimapEditor : EditorWindow {
     // Window GUI code
     private void OnGUI() {
         scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
-            testTile =(TileBase)EditorGUILayout.ObjectField("Test Tile:", testTile, typeof(TileBase), true);
-
             targetTilemap = (Tilemap)EditorGUILayout.ObjectField("Target Tilemap:", targetTilemap, typeof(Tilemap), true);
             targetWidth = EditorGUILayout.IntField("Width:", targetWidth);
             targetHeight = EditorGUILayout.IntField("Height:", targetHeight);
