@@ -9,78 +9,147 @@ public class WFCAlgorithm
     private Vector2Int outputMapSize;
 
     // 2D array of the final generated tileIds
-    int?[,] resultTilemap;
+    private int?[,] resultTileIds;
 
     // bool array for each tile storing the options left for this tile
-    bool[,,] tileDomains;
+    private bool[,,] tileDomains;
+
+    private int collapsedCellsCounter = 0;
+
+    private int numberCellsToCollapse;
 
     public WFCAlgorithm(TilemapStats tilemapStats, Vector2Int outputMapSize)
     {
         this.tilemapStats = tilemapStats;
         this.outputMapSize = outputMapSize;
-    }
+        numberCellsToCollapse = outputMapSize.x * outputMapSize.y;
 
-    public int?[,] Run()
-    {
-        // Init the result based on the desired mapSize
-        resultTilemap = new int?[outputMapSize.x, outputMapSize.y];
+        resultTileIds = new int?[outputMapSize.x, outputMapSize.y];
         tileDomains = new bool[outputMapSize.x, outputMapSize.y, tilemapStats.tileCount];
 
         for (int x = 0; x < outputMapSize.x; x++)
             for (int y = 0; y < outputMapSize.y; y++)
                 for (int t = 0; t < tilemapStats.tileCount; t++)
                     tileDomains[x, y, t] = true;
+    }
 
-        int counter = 0;
-        int tilesToCollapse = outputMapSize.x * outputMapSize.y;
-        
+    public int?[,] RunCompleteCollapse()
+    {
         // While uncollapsed cells remain, continue with collpasing cells
-        while(counter < tilesToCollapse)
+        // prioritizing the ones with the smallest entropy
+        while(AnyCellsLeftToCollapse())
         {
-            counter++;
-
-            // Collapse cell with lowest entropy
-            Vector2Int? tileToCollapseNullable = FindMinimumEntropyCell();
-
-            // If there is no valid cell left to collapse, then we are done
-            if (tileToCollapseNullable == null)
-                break;
-
-            Vector2Int tileToCollapse = tileToCollapseNullable.Value;
-
-            //Debug.Log("Collapsing cell " + tileToCollapse);
-
-            List<int> possibleTilesIds = new List<int>();
-            for (int t = 0; t < tilemapStats.tileCount; t++)
-            {
-                if (tileDomains[tileToCollapse.x, tileToCollapse.y, t])
-                    possibleTilesIds.Add(t);
-            }
-
-            int randomIndex = Random.Range(0, possibleTilesIds.Count);
-            int tileId = -1;
-
-            if (possibleTilesIds.Count > 0)
-            {
-                tileId = possibleTilesIds[randomIndex];
-            }
-
-            // Update the domain to reflect the collapse in preparation for the propagation step
-            for (int t = 0; t < tilemapStats.tileCount; t++)
-            {
-                tileDomains[tileToCollapse.x, tileToCollapse.y, t] = t == tileId;
-            }
-
-            resultTilemap[tileToCollapse.x, tileToCollapse.y] = tileId != -1 ? tileId : null;
-
-
-            // Propagate Changes to all uncollapsed cells
-            PropagateConstraints(tileToCollapse);
-
-            //Debug.Log(EntropyMatrixToString());
+            CollapseCell();
         }
 
-        return resultTilemap;
+        return resultTileIds;
+    }
+
+    public (Vector2Int tilePosition, int tileId)? RunSingleCellCollapse()
+    {
+        if (!AnyCellsLeftToCollapse())
+            return null;
+
+        return CollapseCell();
+    }
+
+    private bool AnyCellsLeftToCollapse()
+    {
+        return collapsedCellsCounter < numberCellsToCollapse;
+    }
+
+    private (Vector2Int, int)? CollapseCell()
+    {
+        collapsedCellsCounter++;
+
+        // Collapse cell with lowest entropy
+        Vector2Int? tileToCollapseNullable = FindMinimumEntropyCell();
+
+        // If there is no valid cell left to collapse, then we are done
+        if (tileToCollapseNullable == null)
+            return null;
+
+        // Get non-nullable version of position
+        Vector2Int tileToCollapse = tileToCollapseNullable.Value;
+
+        // Determine a random tileId based on the options left in the domain
+        // and their probability to occur
+        DetermineTileId(tileToCollapse);
+
+        // Propagate Changes to all uncollapsed cells
+        PropagateConstraints(tileToCollapse);
+
+        //Debug.Log(EntropyMatrixToString());
+
+        // If the collapse of the cell was successful then return the collapsed
+        // position as well as the id of the newly collapsed tile
+        if (resultTileIds[tileToCollapse.x, tileToCollapse.y] == null)
+        {
+            return null;
+        }
+        else
+        {
+            return (tileToCollapse, resultTileIds[tileToCollapse.x, tileToCollapse.y].Value);
+        }
+    }
+
+    private Vector2Int? FindMinimumEntropyCell()
+    {
+        List<Vector2Int> minimumEntropyTiles = new List<Vector2Int>();
+        float minimumEntropy = float.MaxValue;
+
+        for (int x = 0; x < tileDomains.GetLength(0); x++)
+            for (int y = 0; y < tileDomains.GetLength(1); y++)
+            {
+                if (resultTileIds[x, y] == null)
+                {
+                    float entropy = CalculateEntropyForCell(x, y);
+
+                    if (entropy < minimumEntropy)
+                    {
+                        minimumEntropy = entropy;
+                        minimumEntropyTiles = new List<Vector2Int>();
+                        minimumEntropyTiles.Add(new Vector2Int(x, y));
+                    }
+                    else if (entropy == minimumEntropy)
+                    {
+                        minimumEntropyTiles.Add(new Vector2Int(x, y));
+                    }
+                }
+            }
+
+        if (minimumEntropyTiles.Count != 0)
+        {
+            int index = Random.Range(0, minimumEntropyTiles.Count);
+            return minimumEntropyTiles[index];
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private void DetermineTileId(Vector2Int tileToCollapse)
+    {
+        List<int> possibleTilesIds = new List<int>();
+        for (int t = 0; t < tilemapStats.tileCount; t++)
+        {
+            if (tileDomains[tileToCollapse.x, tileToCollapse.y, t])
+                possibleTilesIds.Add(t);
+        }
+
+        int randomIndex = Random.Range(0, possibleTilesIds.Count);
+        int tileId;
+
+        tileId = possibleTilesIds[randomIndex];
+
+        // Update the domain to reflect the collapse in preparation for the propagation step
+        for (int t = 0; t < tilemapStats.tileCount; t++)
+        {
+            tileDomains[tileToCollapse.x, tileToCollapse.y, t] = t == tileId;
+        }
+
+        resultTileIds[tileToCollapse.x, tileToCollapse.y] = tileId;
     }
 
     // Propagate the domain-changes caused by a cell-collapse towards the rest
@@ -132,7 +201,7 @@ public class WFCAlgorithm
                     // ... and has not been visited yet by the propagation
                     //     algorithm
                     if (!LocationOutOfMapBounds(targetPosition) &&
-                        resultTilemap[targetPosition.x, targetPosition.y] == null &&
+                        resultTileIds[targetPosition.x, targetPosition.y] == null &&
                         !visitedTiles[targetPosition.x, targetPosition.y])
                     {
                         // Track if the tile actually changes because if it
@@ -186,46 +255,37 @@ public class WFCAlgorithm
         }
     }
 
-    private Vector2Int? FindMinimumEntropyCell()
+    // Calculate the probability for single cell given by its x and y coordinate
+    private float CalculateEntropyForCell(int x, int y)
     {
-        List<Vector2Int> minimumEntropyTiles = new List<Vector2Int>();
-        int minimumEntropy = int.MaxValue;
+        // Binary entropy calculation
+        //int entropy = 0;
+        //for (int t = 0; t < tileDomains.GetLength(2); t++)
+        //{
+        //    entropy += tileDomains[x, y, t] ? 1 : 0;
+        //}
 
-        for (int x = 0; x < tileDomains.GetLength(0); x++)
-            for (int y = 0; y < tileDomains.GetLength(1); y++)
+        // Probability based entropy calculation
+        
+
+        float W = 0;
+        for (int t = 0; t < tilemapStats.tileCount; t++)
+            if (tileDomains[x, y, t])
+                W += tilemapStats.idToFrequency[t];
+
+        float entropy = 0;
+        for (int t = 0; t < tilemapStats.tileCount; t++)
+            if (tileDomains[x, y, t])
             {
-                if (resultTilemap[x, y] == null)
-                {
-                    int entropy = 0;
-                    for (int t = 0; t < tileDomains.GetLength(2); t++)
-                    {
-                        entropy += tileDomains[x, y, t] ? 1 : 0;
-                    }
-
-                    if (entropy < minimumEntropy)
-                    {
-                        minimumEntropy = entropy;
-                        minimumEntropyTiles = new List<Vector2Int>();
-                        minimumEntropyTiles.Add(new Vector2Int(x, y));
-                    }
-                    else if (entropy == minimumEntropy)
-                    {
-                        minimumEntropyTiles.Add(new Vector2Int(x, y));
-                    }
-                }
+                float probabilityForT = (float)tilemapStats.idToFrequency[t] / W;
+                entropy += probabilityForT * Mathf.Log(probabilityForT, 2);
             }
 
-        if (minimumEntropyTiles.Count != 0)
-        {
-            int index = Random.Range(0, minimumEntropyTiles.Count);
-            return minimumEntropyTiles[index];
-        }
-        else
-        {
-            return null;
-        } 
+        entropy *= -1;
+        return entropy;
     }
 
+    // Determine if a given position is within the bounds of the targetMapSize
     private bool LocationOutOfMapBounds(Vector2Int location)
     {
         return location.x < 0 || location.y < 0 || location.x >= outputMapSize.x || location.y >= outputMapSize.y;
