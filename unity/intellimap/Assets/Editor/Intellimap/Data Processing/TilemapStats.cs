@@ -2,22 +2,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using System.Linq;
 
 public class TilemapStats {
     public int tileCount;
 
     public Dictionary<int, Tile> idToTile;
     public Dictionary<Tile, int> tileToId;
-    public Dictionary<int, int> idToFrequency;
+
+    public int[] tileOccurrences;
+    public float[] tileFrequencies;
 
     public int[,,] totalAdjacency;
     public float[,,] normalizedAdjacency;
 
     public TilemapStats(Tilemap tilemap) {
         BuildIdMappings(tilemap);
-        BuildFrequencyMapping(tilemap);
-
         tileCount = idToTile.Count;
+
+        BuildFrequencyMapping(tilemap);
 
         ExtractAdjacency(tilemap);
     }
@@ -41,7 +44,12 @@ public class TilemapStats {
     }
 
     private void BuildFrequencyMapping(Tilemap tilemap) {
-        idToFrequency = new Dictionary<int, int>();
+        tileOccurrences = new int[tileCount];
+        tileFrequencies = new float[tileCount];
+
+        for (int i = 0; i < tileCount; i++) {
+            tileOccurrences[i] = 0;
+        }
 
         foreach (Vector3Int position in tilemap.cellBounds.allPositionsWithin) {
             if (!tilemap.HasTile(position))
@@ -50,10 +58,12 @@ public class TilemapStats {
             Tile tile = tilemap.GetTile<Tile>(position);
             int tileId = tileToId[tile];
 
-            if (idToFrequency.ContainsKey(tileId))
-                idToFrequency[tileId]++;
-            else
-                idToFrequency[tileId] = 1;
+            tileOccurrences[tileId]++;
+        }
+
+        int occurrenceSum = tileOccurrences.Sum();
+        for (int i = 0; i < tileCount; i++) {
+            tileFrequencies[i] = (float)tileOccurrences[i] / occurrenceSum;
         }
     }
 
@@ -111,9 +121,8 @@ public class TilemapStats {
     public override string ToString()
     {
         string result = "Tile frequencies:";
-        foreach ((int tileId, int freq) in idToFrequency)
-        {
-            result += tileId + ": " + freq + "\n";
+        for (int tileId = 0; tileId < tileCount; tileId++) {
+            result += tileId + ": " + tileFrequencies[tileId] + "\n";
         }
 
         result += "\n";
