@@ -138,10 +138,34 @@ public class WFCAlgorithm
                 possibleTilesIds.Add(t);
         }
 
-        int randomIndex = Random.Range(0, possibleTilesIds.Count);
-        int tileId;
+        float probabilitySum = 0;
+        foreach (int possibleTileId in possibleTilesIds)
+        {
+            probabilitySum += tilemapStats.tileFrequencies[possibleTileId];
+        }
 
-        tileId = possibleTilesIds[randomIndex];
+        List<float> normalizedProbabilities = new List<float>();
+
+        foreach (int possibleTileId in possibleTilesIds)
+        {
+            normalizedProbabilities.Add(tilemapStats.tileFrequencies[possibleTileId] / probabilitySum);
+        }
+
+        float randomValue = Random.Range(0f, 1f);
+        int tileId = -1;
+
+        float aggregatedProbability = 0;
+
+        for (int i = 0; i < possibleTilesIds.Count; i++)
+        {
+            aggregatedProbability += normalizedProbabilities[i];
+
+            if (randomValue <= aggregatedProbability)
+            {
+                tileId = possibleTilesIds[i];
+                break;
+            }
+        }
 
         // Update the domain to reflect the collapse in preparation for the propagation step
         for (int t = 0; t < tilemapStats.tileCount; t++)
@@ -258,16 +282,6 @@ public class WFCAlgorithm
     // Calculate the probability for single cell given by its x and y coordinate
     private float CalculateEntropyForCell(int x, int y)
     {
-        // Binary entropy calculation
-        //int entropy = 0;
-        //for (int t = 0; t < tileDomains.GetLength(2); t++)
-        //{
-        //    entropy += tileDomains[x, y, t] ? 1 : 0;
-        //}
-
-        // Probability based entropy calculation
-        
-
         float W = 0;
         for (int t = 0; t < tilemapStats.tileCount; t++)
             if (tileDomains[x, y, t])

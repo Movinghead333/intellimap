@@ -3,11 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Tilemaps;
 
-[ExecuteInEditMode]
 public class IntellimapEditor : EditorWindow {
-    private static bool T = true;
-    private static bool F = false;
-
     private TileBase testTile;
 
     private Vector2 scrollPos;
@@ -23,6 +19,7 @@ public class IntellimapEditor : EditorWindow {
 
     private TilemapStats tilemapStats;
 
+    #nullable enable
     private WFCAlgorithm? currentWFCInstance;
     
     // Register window as menu item
@@ -123,6 +120,12 @@ public class IntellimapEditor : EditorWindow {
             {
                 SingleCellCollapseButtonPressed();
             }
+
+            if (GUILayout.Button("Clear"))
+            {
+                if (targetTilemap != null)
+                    targetTilemap.ClearAllTiles();
+            }
         EditorGUILayout.EndScrollView();
     }
 
@@ -148,12 +151,6 @@ public class IntellimapEditor : EditorWindow {
                 RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
             }
         }
-
-        //int?[,] tileIdsMatrix = currentWFCInstance.RunCompleteCollapse();
-
-        //Render(tileIdsMatrix);
-
-        //currentWFCInstance = null;
     }
 
     private void SingleCellCollapseButtonPressed()
@@ -185,14 +182,16 @@ public class IntellimapEditor : EditorWindow {
     }
 
     // Render the resulting tileIdMatrix to the selected Tilemap
-    private void Render(int?[,] tileIdsMatrix)
-    {
-        for (int x = 0; x < tileIdsMatrix.GetLength(0); x++)
-            for (int y = 0; y < tileIdsMatrix.GetLength(1); y++)
-                if (tileIdsMatrix[x, y].HasValue)
-                    RenderSingleCell(new Vector2Int(x, y), tileIdsMatrix[x, y].Value);
-
-    }
+    //private void Render(int?[,] tileIdsMatrix)
+    //{
+    //    for (int x = 0; x < tileIdsMatrix.GetLength(0); x++)
+    //        for (int y = 0; y < tileIdsMatrix.GetLength(1); y++)
+    //            if (tileIdsMatrix[x, y].HasValue)
+    //            {
+    //                int tiledId = tileIdsMatrix[x, y].Value;
+    //                RenderSingleCell(new Vector2Int(x, y), tiledId);
+    //            }
+    //}
 
     private void RenderSingleCell(Vector2Int tilePosition, int tileId)
     {
