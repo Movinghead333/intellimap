@@ -271,13 +271,13 @@ public class WFCAlgorithm
         float W = 0;
         for (int t = 0; t < tilemapStats.tileCount; t++)
             if (tileDomains[x, y, t])
-                W += tilemapStats.idToFrequency[t];
+                W += tilemapStats.tileFrequencies[t];
 
         float entropy = 0;
         for (int t = 0; t < tilemapStats.tileCount; t++)
             if (tileDomains[x, y, t])
             {
-                float probabilityForT = (float)tilemapStats.idToFrequency[t] / W;
+                float probabilityForT = (float)tilemapStats.tileFrequencies[t] / W;
                 entropy += probabilityForT * Mathf.Log(probabilityForT, 2);
             }
 
