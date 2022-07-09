@@ -20,6 +20,7 @@ public class Matrix {
     Color foregroundColor;
     Color backgroundColor;
     Color borderColor;
+    Color highlightBorderColor;
 
     private WeightBox[] boxes;
 
@@ -28,7 +29,7 @@ public class Matrix {
 
     private float startSpacing;
 
-    public Matrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor,
+    public Matrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor,
                             float maxPercentageOfWindowHeight, int minBoxSize, EditorWindow parentWindow)
     {
         this.parentWindow = parentWindow;
@@ -43,6 +44,7 @@ public class Matrix {
         this.foregroundColor = foregroundColor;
         this.backgroundColor = backgroundColor;
         this.borderColor = borderColor;
+        this.highlightBorderColor = highlightBorderColor;
 
         startSpacing = 15;
 
@@ -54,7 +56,7 @@ public class Matrix {
 
         boxes = new WeightBox[size * size];
         for (int i = 0; i < size * size; i++) {
-            boxes[i] = new WeightBox(foregroundColor, backgroundColor, borderColor, detailView, parentWindow);
+            boxes[i] = new WeightBox(foregroundColor, backgroundColor, borderColor, highlightBorderColor, detailView);
         }
 
         for (int y = 0; y < size; y++) {

@@ -54,6 +54,10 @@ public class Box {
         content.text = text;
     }
 
+    public virtual void SetTooltip(string tooltip) {
+        content.tooltip = tooltip;
+    }
+
     public virtual void SetAlpha(float alpha) {
         foregroundColor = new Color(foregroundColor.r, foregroundColor.g, foregroundColor.b, alpha);
     }
@@ -68,9 +72,5 @@ public class Box {
             return true;
         }
         return false;
-    }
-
-    protected bool InRectangle(Rect rect, float x, float y) {
-        return x >= rect.x && y >= rect.y && x < rect.x + rect.width && y < rect.y + rect.height;
     }
 }

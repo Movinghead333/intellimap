@@ -17,10 +17,6 @@ public class TextureBox : Box {
         UpdateTexture();
     }
 
-    public override void Show() {
-        base.Show();
-    }
-
     public void FillMagenta() {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -53,7 +49,7 @@ public class TextureBox : Box {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 if (!DrawBorder(x, y)) {
-                    if (InRectangle(externalTextureDrawRegion, x, y)) {
+                    if (GUIUtil.InRectangle(externalTextureDrawRegion, x, y)) {
                         Color pixel = externalTexture.GetPixel((int)externalTextureRect.x + x - startX, (int)externalTextureRect.y + y - startY);
                         texture.SetPixel(x, y, pixel);
                     }

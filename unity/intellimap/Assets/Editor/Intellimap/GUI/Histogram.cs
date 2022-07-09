@@ -8,6 +8,9 @@ using System.Linq;
 using static GUIUtil;
 
 public class Histogram : SliderGroup {
+    //private int changedSliderIndex;
+    //private float changedSliderOriginalValue;
+
     public Histogram(int size)
         : base(size, Color.clear, Color.grey)
     {
@@ -15,13 +18,30 @@ public class Histogram : SliderGroup {
             sliderValues[i] = 1f / size;
         }
 
+        //changedSliderIndex = -1;
+
         UpdateTextBoxes();
     }
 
-    protected override void ReactToSliderChange(int changedSliderIndex, float newSliderValue) {
-        AdjustOtherSliders(changedSliderIndex, newSliderValue);
+    public override void Show() {
+        /*if (LeftMouseButton() && MouseUp()) {
+            AdjustAllSliders();
+            changedSliderIndex = -1;
+        }*/
+
+        base.Show();
     }
 
+    protected override void ReactToSliderChange(int changedSliderIndex, float newSliderValue) {
+        //AdjustOtherSliders(changedSliderIndex, newSliderValue);
+
+        /*if (this.changedSliderIndex == -1) {
+            this.changedSliderIndex = changedSliderIndex;
+            changedSliderOriginalValue = sliderValues[changedSliderIndex];
+        }*/
+    }
+
+    /*
     private void AdjustOtherSliders(int changedSliderIndex, float newSliderValue) {
         float diff = newSliderValue - sliderValues[changedSliderIndex];
 
@@ -46,24 +66,56 @@ public class Histogram : SliderGroup {
         }
 
         float otherSlidersSum = otherSlidersDistancesToEnd.Sum();
-
         // Adjust other sliders
-        for (int i = 0; i < numSliders; i++) {
-            if (i == changedSliderIndex) continue;
+        if (otherSlidersSum > 0) {
+            for (int i = 0; i < numSliders; i++) {
+                if (i == changedSliderIndex) continue;
    
-            float percentChangeToSlider = otherSlidersDistancesToEnd[i] / otherSlidersSum;
-            float changeToSlider = percentChangeToSlider * -diff;
+                float percentChangeToSlider = otherSlidersDistancesToEnd[i] / otherSlidersSum;
+                float changeToSlider = percentChangeToSlider * -diff;
 
-            sliderValues[i] = RoundOnEdge(LimitToBounds(sliderValues[i] + changeToSlider, lower: 0f, upper: 1f));
+                sliderValues[i] = RoundOnEdge(LimitToBounds(sliderValues[i] + changeToSlider, lower: 0f, upper: 1f));
+            }
         }
     }
 
+    private void AdjustAllSliders() {
+        float diff = sliderValues[changedSliderIndex] - changedSliderOriginalValue;
+
+        // Collect distance to end for every slider
+        float[] slidersDistancesToEnd = new float[numSliders];
+
+        if (isPositive(diff)) {
+            for (int i = 0; i < numSliders; i++) {
+                slidersDistancesToEnd [i] = sliderValues[i];
+            }
+        }
+        else {
+            for (int i = 0; i < numSliders; i++) {
+                slidersDistancesToEnd [i] = 1f - sliderValues[i];
+            }
+        }
+
+        float distancesSum = slidersDistancesToEnd.Sum();
+        if (distancesSum > 0) {
+            for (int i = 0; i < numSliders; i++) {
+                float percentChangeToSlider = slidersDistancesToEnd [i] / distancesSum;
+                float changeToSlider = percentChangeToSlider * -diff;
+
+                sliderValues[i] = RoundOnEdge(LimitToBounds(sliderValues[i] + changeToSlider, lower: 0f, upper: 1f));
+            }
+        }
+
+        UpdateTextBoxes();
+    }
+
+    */
+
     public override void SetSliderValues(List<float> newSliderValues) {
         for (int i = 0; i < newSliderValues.Count; i++) {
-            if (newSliderValues[i] > 1 || newSliderValues[i] < 0) {
+            if (newSliderValues[i] > 1f || newSliderValues[i] < 0f) {
                 throw new ArgumentException("All slider values have to be between 0 and 1.");
             }
-            // Maybe also check for if it accumulates to 100%.
         }
 
         base.SetSliderValues(newSliderValues);

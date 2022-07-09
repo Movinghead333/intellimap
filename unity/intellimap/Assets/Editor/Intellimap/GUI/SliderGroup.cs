@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEditor;
 using System;
 
+using static GUIUtil;
+
 public class SliderGroup {
     protected int numSliders;
     protected int height;
@@ -70,8 +72,6 @@ public class SliderGroup {
                 GUILayout.Space(space);
 
                 float newSliderValue = GUILayout.VerticalSlider(sliderValues[i], 1f, 0f, GUILayout.Height(height));
-                //float sliderWidth = GUILayoutUtility.GetLastRect().width;
-                //newSliderValue = RoundOnEdge(newSliderValue);
                 if (newSliderValue != sliderValues[i]) {
                     ReactToSliderChange(i, newSliderValue);
                     sliderValues[i] = newSliderValue;
@@ -126,6 +126,9 @@ public class SliderGroup {
         for (int i = 0; i < numSliders; i++) {
             float value = sliderValues[i];
             string valueString = value.ToString();
+            
+            textBoxes[i].SetTooltip(valueString);
+
             int stringLength = 3;
             if (valueString.Length > stringLength) {
                 valueString = valueString.Substring(1, stringLength);
@@ -140,10 +143,10 @@ public class SliderGroup {
     }
 
     protected float RoundOnEdge(float f) {
-        if (f < 0.001) {
+        if (f < 0.0001) {
             return 0f;
         }
-        if (f > 0.999) {
+        if (f > 0.9999) {
             return 1f;
         }
 
