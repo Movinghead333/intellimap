@@ -29,8 +29,7 @@ public class DetailViewSliderGroup : SliderGroup {
         SetSliderValues(box.GetWeights());
     }
 
-    protected override void ReactToSliderChange(int changedSliderIndex, float newSliderValue) {
-        base.ReactToSliderChange(changedSliderIndex, newSliderValue);
+    protected override void SlidersChanged() {
         detailView.UpdateFromSliders(GetSliderValues().ToArray());
     }
 }
