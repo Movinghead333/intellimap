@@ -4,7 +4,11 @@ using UnityEngine;
 
 public class WFCAlgorithm
 {
-    private TilemapStats tilemapStats;
+    private float[,,] directionalWeights;
+
+    private float[] tileFrequencies;
+
+    private int tileCount;
 
     private Vector2Int outputMapSize;
 
@@ -18,18 +22,20 @@ public class WFCAlgorithm
 
     private int numberCellsToCollapse;
 
-    public WFCAlgorithm(TilemapStats tilemapStats, Vector2Int outputMapSize)
+    public WFCAlgorithm(float[,,] directionalWeights, float[] tileFrequencies, Vector2Int outputMapSize)
     {
-        this.tilemapStats = tilemapStats;
+        this.directionalWeights = directionalWeights;
+        this.tileFrequencies = tileFrequencies;
+        tileCount = tileFrequencies.Length;
         this.outputMapSize = outputMapSize;
         numberCellsToCollapse = outputMapSize.x * outputMapSize.y;
 
         resultTileIds = new int?[outputMapSize.x, outputMapSize.y];
-        tileDomains = new bool[outputMapSize.x, outputMapSize.y, tilemapStats.tileCount];
+        tileDomains = new bool[outputMapSize.x, outputMapSize.y, tileCount];
 
         for (int x = 0; x < outputMapSize.x; x++)
             for (int y = 0; y < outputMapSize.y; y++)
-                for (int t = 0; t < tilemapStats.tileCount; t++)
+                for (int t = 0; t < tileCount; t++)
                     tileDomains[x, y, t] = true;
     }
 
@@ -132,7 +138,7 @@ public class WFCAlgorithm
     private void DetermineTileId(Vector2Int tileToCollapse)
     {
         List<int> possibleTilesIds = new List<int>();
-        for (int t = 0; t < tilemapStats.tileCount; t++)
+        for (int t = 0; t < tileCount; t++)
         {
             if (tileDomains[tileToCollapse.x, tileToCollapse.y, t])
                 possibleTilesIds.Add(t);
@@ -141,14 +147,14 @@ public class WFCAlgorithm
         float probabilitySum = 0;
         foreach (int possibleTileId in possibleTilesIds)
         {
-            probabilitySum += tilemapStats.tileFrequencies[possibleTileId];
+            probabilitySum += tileFrequencies[possibleTileId];
         }
 
         List<float> normalizedProbabilities = new List<float>();
 
         foreach (int possibleTileId in possibleTilesIds)
         {
-            normalizedProbabilities.Add(tilemapStats.tileFrequencies[possibleTileId] / probabilitySum);
+            normalizedProbabilities.Add(tileFrequencies[possibleTileId] / probabilitySum);
         }
 
         float randomValue = Random.Range(0f, 1f);
@@ -168,7 +174,7 @@ public class WFCAlgorithm
         }
 
         // Update the domain to reflect the collapse in preparation for the propagation step
-        for (int t = 0; t < tilemapStats.tileCount; t++)
+        for (int t = 0; t < tileCount; t++)
         {
             tileDomains[tileToCollapse.x, tileToCollapse.y, t] = t == tileId;
         }
@@ -235,21 +241,21 @@ public class WFCAlgorithm
 
                         // In this array we collect the possibilities resulting
                         // from the current tile's domain
-                        bool[] tempStates = new bool[tilemapStats.tileCount];
-                        for (int j = 0; j <tilemapStats.tileCount; j++)
+                        bool[] tempStates = new bool[tileCount];
+                        for (int j = 0; j < tileCount; j++)
                             tempStates[j] = false;
 
                         // Now go through the domain of the currently checked tile
-                        for (int i = 0; i < tilemapStats.tileCount; i++)
+                        for (int i = 0; i < tileCount; i++)
                         {
                             // If the tile is within the domain of the currently checked tile
                             // then also check its implications on the neighbouring cells
                             // regarding the set of constraints
                             if (tileDomains[positionToPropagate.x, positionToPropagate.y, i])
                             {
-                                for (int j = 0; j < tilemapStats.tileCount; j++)
+                                for (int j = 0; j < tileCount; j++)
                                 {
-                                    bool connectionAllowed = tilemapStats.totalAdjacency[i, j, d] > 0 ;
+                                    bool connectionAllowed = directionalWeights[i, j, d] > 0 ;
 
                                     targetTileChanged = true;
                                     // We or here to get the union of all tiles possible coming from the
@@ -260,7 +266,7 @@ public class WFCAlgorithm
                         }
 
                         // We then and the result of allowed tiles from the propagation with the current state of the neighbouring tile's domain
-                        for (int j = 0; j < tilemapStats.tileCount; j++)
+                        for (int j = 0; j < tileCount; j++)
                             tileDomains[targetPosition.x, targetPosition.y, j] = tileDomains[targetPosition.x, targetPosition.y, j] && tempStates[j];
                         // TODO: check for chane in tile domain here
 
@@ -283,15 +289,15 @@ public class WFCAlgorithm
     private float CalculateEntropyForCell(int x, int y)
     {
         float W = 0;
-        for (int t = 0; t < tilemapStats.tileCount; t++)
+        for (int t = 0; t < tileCount; t++)
             if (tileDomains[x, y, t])
-                W += tilemapStats.tileFrequencies[t];
+                W += tileFrequencies[t];
 
         float entropy = 0;
-        for (int t = 0; t < tilemapStats.tileCount; t++)
+        for (int t = 0; t < tileCount; t++)
             if (tileDomains[x, y, t])
             {
-                float probabilityForT = (float)tilemapStats.tileFrequencies[t] / W;
+                float probabilityForT = (float)tileFrequencies[t] / W;
                 entropy += probabilityForT * Mathf.Log(probabilityForT, 2);
             }
 
@@ -314,7 +320,7 @@ public class WFCAlgorithm
             for (int x = 0; x < outputMapSize.x; x++)
             {
                 int entropy = 0;
-                for (int t = 0; t < tilemapStats.tileCount; t++)
+                for (int t = 0; t < tileCount; t++)
                     entropy += tileDomains[x, y, t] ? 1 : 0;
                 result += entropy + ", ";
             }

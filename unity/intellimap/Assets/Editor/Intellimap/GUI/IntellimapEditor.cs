@@ -189,7 +189,11 @@ public class IntellimapEditor : EditorWindow {
         if (targetTilemap == null || tilemapStats == null || currentWFCInstance != null)
             return;
 
-        currentWFCInstance = new WFCAlgorithm(tilemapStats, new Vector2Int(targetWidth, targetHeight));
+        float[,,] directionalWeights = matrix.GetAllBoxWeights();
+        float[] tileFrequencies = histogram.GetNormalizedSliderValues();
+        Vector2Int targetMapSize = new Vector2Int(targetWidth, targetHeight);
+
+        currentWFCInstance = new WFCAlgorithm(directionalWeights, tileFrequencies, targetMapSize);
     }
 
     // Render the resulting tileIdMatrix to the selected Tilemap
