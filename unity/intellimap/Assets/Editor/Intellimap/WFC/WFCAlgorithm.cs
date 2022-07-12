@@ -255,7 +255,7 @@ public class WFCAlgorithm
                             {
                                 for (int j = 0; j < tileCount; j++)
                                 {
-                                    bool connectionAllowed = directionalWeights[i, j, d] > 0 ;
+                                    bool connectionAllowed = directionalWeights[j, i, d] > 0 ;
 
                                     targetTileChanged = true;
                                     // We or here to get the union of all tiles possible coming from the
