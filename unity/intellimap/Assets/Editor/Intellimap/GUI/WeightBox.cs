@@ -8,8 +8,6 @@ using System.Linq;
 using static GUIUtil;
 
 public class WeightBox : Box {
-    private EditorWindow parentWindow;
-
     private WeightBoxDetailView detailView;
 
     private float[] weights;
@@ -19,19 +17,25 @@ public class WeightBox : Box {
     private float startingPercentage;
     private bool dragStartedInBox;
 
+    private Color highlightBorderColor;
+    private Color originalBorderColor;
+
     private WeightBox connectedBox;
 
-    public WeightBox(Color foregroundColor, Color backgroundColor, Color borderColor, WeightBoxDetailView detailView, EditorWindow parentWindow)
-        : this(10, 10, foregroundColor, backgroundColor, borderColor, detailView, parentWindow) {}
+    // Used to repaint the window *only* when the mouse enters or leaves a box
+    // and not every time the mouse moves
+    private bool mouseIn;
 
-    public WeightBox(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor, WeightBoxDetailView detailView, EditorWindow parentWindow)
+    public WeightBox(Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor, WeightBoxDetailView detailView)
+        : this(10, 10, foregroundColor, backgroundColor, borderColor, highlightBorderColor, detailView) {}
+
+    public WeightBox(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor, WeightBoxDetailView detailView)
         : base(width, height, foregroundColor, backgroundColor, borderColor)
     {
-        this.parentWindow = parentWindow;
         this.detailView = detailView;
 
-        // Every DraggableBox has 4 weights that are automatically updated.
-        // Just initialize them to 50%.
+        SetContentOffset(2, 0);
+
         weights = new float[4];
         startingWeights = new float[4];
         weights[0] = startingWeights[0] = 0.5f;
@@ -44,24 +48,42 @@ public class WeightBox : Box {
 
         UpdateTexture();
 
+        this.highlightBorderColor = highlightBorderColor;
+        originalBorderColor = borderColor;
+
         connectedBox = null;
+
+        mouseIn = false;
     }
 
     public override void Show() {
         base.Show();
         Rect boxRect = GUILayoutUtility.GetLastRect();
-
+        
         float mouseX = Event.current.mousePosition.x;
         float mouseY = Event.current.mousePosition.y;
-        if (MouseMove()) {
-            if (InRectangle(boxRect, mouseX, mouseY)) {
-                SetText(GetPercentage().ToString());
-            }
-            else {
-                SetText("");
-            }
 
-            parentWindow.Repaint();
+        if (MouseMove()) {
+            bool inRect = InRectangle(boxRect, mouseX, mouseY);
+
+            if (!mouseIn && inRect) {
+                mouseIn = true;
+
+                SetText(GetPercentage().ToString());
+                HighlightBorderColor();
+
+                UpdateTexture();
+                IntellimapEditor.repaint = true;
+            }
+            else if (mouseIn && !inRect) {
+                mouseIn = false;
+
+                SetText("");
+                ResetBorderColor();
+
+                UpdateTexture();
+                IntellimapEditor.repaint = true;
+            }
         }
 
         if (LeftMouseButton()) {
@@ -70,7 +92,7 @@ public class WeightBox : Box {
                     dragStartedInBox = true;
 
                     detailView.SetBox(this);
-                    parentWindow.Repaint();
+                    IntellimapEditor.repaint = true;
                 }
             }
             
@@ -264,6 +286,11 @@ public class WeightBox : Box {
         UpdateConnectedBox();
     }
 
+    public override void Resize(int width, int height) {
+        base.Resize(width, height);
+        UpdateTexture();
+    }
+
     private void UpdateConnectedBox() {
         if (connectedBox != null) {
             connectedBox.weights[0] = weights[2];
@@ -276,9 +303,12 @@ public class WeightBox : Box {
         }
     }
 
-    public override void Resize(int width, int height) {
-        base.Resize(width, height);
-        UpdateTexture();
+    private void HighlightBorderColor() {
+        borderColor = highlightBorderColor;
+    }
+
+    private void ResetBorderColor() {
+        borderColor = originalBorderColor;
     }
 
     private void UpdatePercentageByWeights() {
@@ -308,26 +338,6 @@ public class WeightBox : Box {
         }
         texture.Apply();
         
-        parentWindow.Repaint();
-    }
-
-    private bool LeftMouseButton() {
-        return Event.current.button == 0;
-    }
-
-    private bool MouseDown() {
-        return Event.current.type == EventType.MouseDown;
-    }
-
-    private bool MouseUp() {
-        return Event.current.type == EventType.MouseUp;
-    }
-
-    private bool MouseDrag() {
-        return Event.current.type == EventType.MouseDrag;
-    }
-
-    private bool MouseMove() {
-        return Event.current.type == EventType.MouseMove;
+        IntellimapEditor.repaint = true;
     }
 }
