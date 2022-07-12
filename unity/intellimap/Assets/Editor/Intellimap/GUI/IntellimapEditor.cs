@@ -106,7 +106,7 @@ public class IntellimapEditor : EditorWindow {
     }
 
     private void FillUIWithData() {
-        TilemapStats tilemapStats = DataUtil.LoadTilemapStats("Tilemaps/TestTilemap");
+        TilemapStats tilemapStats = DataUtil.LoadTilemapStats(baseDataPath);
         Debug.Log(tilemapStats);
         this.tilemapStats = tilemapStats;
 
