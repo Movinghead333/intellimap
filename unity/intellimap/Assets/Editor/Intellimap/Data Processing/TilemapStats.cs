@@ -16,13 +16,18 @@ public class TilemapStats {
     public int[,,] totalAdjacency;
     public float[,,] normalizedAdjacency;
 
-    public TilemapStats(Tilemap tilemap) {
-        BuildIdMappings(tilemap);
-        tileCount = idToTile.Count;
+    public TilemapStats(Tilemap[] tilemapArray) {
+       
+        foreach(Tilemap tile in tilemapArray)
+        {
+            BuildIdMappings(tile);
+            tileCount = idToTile.Count;
 
-        BuildFrequencyMapping(tilemap);
+            BuildFrequencyMapping(tile);
 
-        ExtractAdjacency(tilemap);
+            ExtractAdjacency(tile);
+        }
+       
     }
 
     private void BuildIdMappings(Tilemap tilemap) {

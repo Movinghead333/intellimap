@@ -5,8 +5,8 @@ using UnityEngine.Tilemaps;
 
 [ExecuteInEditMode]
 public class IntellimapEditor : EditorWindow {
-    private static bool T = true;
-    private static bool F = false;
+   private static bool T = true;
+   private static bool F = false;
 
     private Vector2 scrollPos;
 
@@ -69,7 +69,7 @@ public class IntellimapEditor : EditorWindow {
             GUIUtil.HorizontalLine(Color.grey);
 
             if (GUILayout.Button("Analyze Base Data")) {
-                TilemapStats tilemapStats = DataUtil.LoadTilemapStats("Tilemaps/TestTilemap");
+                TilemapStats tilemapStats = DataUtil.LoadTilemapStats(baseDataPath);
                 Debug.Log(tilemapStats);
                 this.tilemapStats = tilemapStats;
 

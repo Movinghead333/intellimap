@@ -1,15 +1,33 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class DataUtil {
     public static TilemapStats LoadTilemapStats(string resourcePath) {
-        GameObject parentObject = Resources.Load(resourcePath) as GameObject;
-        Tilemap tilemap = parentObject.GetComponent<Tilemap>();
-        tilemap.CompressBounds();
-
-        TilemapStats tilemapStats = new TilemapStats(tilemap);
+        string[] fileEntries = Directory.GetFiles(resourcePath);
+        //Debug.Log(resourcePath);
+        var root= Path.GetFileName(resourcePath);
+        TilemapStats tilemapStats = null;
+        GameObject parentObject = null;
+        List<Tilemap> tileArray = new List<Tilemap>();
+        foreach (string file in fileEntries)
+        {
+            
+            var newPath = root + "/" + Path.GetFileName(file);
+            if(!newPath.Contains("meta"))
+            {
+                newPath = newPath.Split(".")[0];
+                parentObject = Resources.Load(newPath) as GameObject;
+            }
+            Tilemap tilemap = parentObject.GetComponent<Tilemap>();
+            tilemap.CompressBounds();
+            tileArray.Add(tilemap);
+       
+        }
+        tilemapStats = new TilemapStats(tileArray.ToArray());
         return tilemapStats;
     }
     
