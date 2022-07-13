@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEditor;
 
@@ -55,6 +56,10 @@ public class GUIUtil {
         return result;
     }
 
+    public static long GetTimestamp() {
+        return new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+    }
+
     public static bool InRectangle(Rect rect, float x, float y) {
         return x >= rect.x && y >= rect.y && x < rect.x + rect.width && y < rect.y + rect.height;
     }
@@ -77,5 +82,18 @@ public class GUIUtil {
 
     public static bool MouseMove() {
         return Event.current.type == EventType.MouseMove;
+    }
+
+    public static Vector2 MouseScroll() {
+        if (Event.current.isScrollWheel) {
+            return Event.current.delta;        
+        }
+        else {
+            return Vector2.zero;
+        }
+    }
+
+    public static bool CtrlHeld() {
+        return Event.current.control;
     }
 }

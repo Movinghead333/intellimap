@@ -12,6 +12,9 @@ public class WeightBoxDetailView {
     private TextureBox arrowBoxBetweenSlidersAndText;
 
     public WeightBoxDetailView() {
+        box = null;
+        value = 0f;
+
         weightSliders = new DetailViewSliderGroup(75, this);
         
         arrowBoxBetweenSlidersAndText = new TextureBox(20, 20, Color.clear, Color.clear);
@@ -47,7 +50,7 @@ public class WeightBoxDetailView {
 
                     GUILayout.Label("Value:");
                     float newValue = EditorGUILayout.FloatField(value, GUILayout.Width(72));
-                    if (newValue != value) {
+                    if (newValue != value && box != null) {
                         newValue = GUIUtil.LimitToBounds(newValue, 0f, 1f);
                         box.SetPercentage(newValue);
                     }
@@ -60,8 +63,14 @@ public class WeightBoxDetailView {
 
     public void SetBox(WeightBox box) {
         this.box = box;
-        value = box.GetPercentage();
-        weightSliders.SetWeightBox(box);
+        if (box != null) {
+            value = box.GetPercentage();
+            weightSliders.SetWeightBox(box);
+        }
+    }
+
+    public WeightBox GetBox() {
+        return box;
     }
 
     public void UpdateFromBox() {
@@ -70,7 +79,10 @@ public class WeightBoxDetailView {
     }
 
     public void UpdateFromSliders(float[] weights) {
-        box.SetWeights(weights);
-        value = box.GetPercentage();
+        if (box != null) {
+            box.SetWeights(weights);
+            box.UpdatePercentageByWeights();
+            value = box.GetPercentage();
+        }
     }
 }

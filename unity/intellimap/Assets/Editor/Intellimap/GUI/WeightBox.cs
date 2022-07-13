@@ -104,6 +104,18 @@ public class WeightBox : Box {
                 dragStartedInBox = false;
             }
         }
+
+        if (InRectangle(boxRect, mouseX, mouseY)) {
+            float scrollAmount = MouseScroll().y;
+            if (scrollAmount != 0f && CtrlHeld()) {
+                if (scrollAmount > 0) {
+                    SetPercentage(currentPercentage - 0.001f);
+                }
+                else {
+                    SetPercentage(currentPercentage + 0.001f);
+                }
+            }
+        }
     }
 
     public void connectWith(WeightBox otherBox) {
@@ -278,6 +290,10 @@ public class WeightBox : Box {
         
         currentPercentage = percentage;
 
+        if (detailView.GetBox() != this) {
+            detailView.SetBox(this);
+        }
+
         detailView.UpdateFromBox();
 
         UpdateTexture();
@@ -311,7 +327,7 @@ public class WeightBox : Box {
         borderColor = originalBorderColor;
     }
 
-    private void UpdatePercentageByWeights() {
+    public void UpdatePercentageByWeights() {
         currentPercentage = startingPercentage = weights.Average();
     }
 
