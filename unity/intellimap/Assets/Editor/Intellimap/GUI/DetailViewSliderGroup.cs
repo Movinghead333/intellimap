@@ -22,6 +22,10 @@ public class DetailViewSliderGroup : SliderGroup {
         textureBoxes[1].SetTexture(rightArrowTexture, textureRect);
         textureBoxes[2].SetTexture(downArrowTexture, textureRect);
         textureBoxes[3].SetTexture(leftArrowTexture, textureRect);
+
+        box = null;
+        SetSliderValues(new float[]{0f, 0f, 0f, 0f});
+        UpdateTextBoxes();
     }
 
     public void SetWeightBox(WeightBox box) {

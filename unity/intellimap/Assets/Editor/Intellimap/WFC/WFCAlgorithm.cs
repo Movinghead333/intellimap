@@ -69,7 +69,7 @@ public class WFCAlgorithm
         return CollapseCell();
     }
 
-    private bool AnyCellsLeftToCollapse()
+    public bool AnyCellsLeftToCollapse()
     {
         return collapsedCellsCounter < numberCellsToCollapse;
     }

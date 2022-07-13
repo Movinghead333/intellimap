@@ -36,8 +36,6 @@ public class Matrix {
         lastWindowWidth = parentWindow.position.width;
         lastWindowHeight = parentWindow.position.height;
 
-        detailView = new WeightBoxDetailView();
-
         this.maxPercentageOfWindowHeight = maxPercentageOfWindowHeight;
         this.minBoxSize = minBoxSize;
 
@@ -53,6 +51,8 @@ public class Matrix {
 
     public void Init(int size) {
         this.size = size;
+
+        detailView = new WeightBoxDetailView();
 
         boxes = new WeightBox[size * size];
         for (int i = 0; i < size * size; i++) {
