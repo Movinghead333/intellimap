@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class WFCAlgorithm
 {
+    public int numberCellsCollapsedByFrequencyHints = 0;
+    public int numberCellsCollapsedByDirectionalProbabilities = 0;
+
+
     private float[,,] directionalWeights;
 
     private float[] tileFrequencies;
@@ -21,6 +25,7 @@ public class WFCAlgorithm
     private int collapsedCellsCounter = 0;
 
     private int numberCellsToCollapse;
+
 
     public WFCAlgorithm(float[,,] directionalWeights, float[] tileFrequencies, Vector2Int outputMapSize, int? seed)
     {
@@ -85,7 +90,8 @@ public class WFCAlgorithm
 
         // Determine a random tileId based on the options left in the domain
         // and their probability to occur
-        DetermineTileId(tileToCollapse);
+        //DetermineTileIdWithFrequencyHints(tileToCollapse);
+        DetermineTileIdWithDirectionalProbabilities(tileToCollapse);
 
         // Propagate Changes to all uncollapsed cells
         PropagateConstraints(tileToCollapse);
@@ -140,8 +146,10 @@ public class WFCAlgorithm
         }
     }
 
-    private void DetermineTileId(Vector2Int tileToCollapse)
+    private void DetermineTileIdWithFrequencyHints(Vector2Int tileToCollapse)
     {
+        numberCellsCollapsedByFrequencyHints++;
+
         List<int> possibleTilesIds = new List<int>();
         for (int t = 0; t < tileCount; t++)
         {
@@ -174,6 +182,103 @@ public class WFCAlgorithm
             if (randomValue <= aggregatedProbability)
             {
                 tileId = possibleTilesIds[i];
+                break;
+            }
+        }
+
+        // Update the domain to reflect the collapse in preparation for the propagation step
+        for (int t = 0; t < tileCount; t++)
+        {
+            tileDomains[tileToCollapse.x, tileToCollapse.y, t] = t == tileId;
+        }
+
+        resultTileIds[tileToCollapse.x, tileToCollapse.y] = tileId;
+    }
+
+    private void DetermineTileIdWithDirectionalProbabilities(Vector2Int tileToCollapse)
+    {
+        // Determine if there are any collpsed adjacent tiles of which we can use their
+        // directional probabilities
+        bool collapsedAdjacentTilesFound = false;
+        for (int d = 0; d < Directions.directions.Length; d++)
+        {
+            Vector2Int adjacentTilePosition = tileToCollapse + Directions.directions[d];
+            if (!LocationOutOfMapBounds(adjacentTilePosition) &&
+                !DomainOfTileIsEmpty(adjacentTilePosition) &&
+                resultTileIds[adjacentTilePosition.x, adjacentTilePosition.y] != null)
+            {
+                collapsedAdjacentTilesFound = true;
+                break;
+            }
+        }
+
+        // If we cannot find any adjacent tiles which have been collapsed already and can be used
+        // as a basis for the collapse of the current tile, then we just use the frequency hints
+        // for determining the current tile
+        if (!collapsedAdjacentTilesFound)
+        {
+            DetermineTileIdWithFrequencyHints(tileToCollapse);
+            return;
+        }
+
+        numberCellsCollapsedByDirectionalProbabilities++;
+
+        /*
+         * Progress determining the tileId with directional probabilities
+         */
+
+        // Get a list of the tileIds remaining in the domain of the tile to collapse
+        List<int> possibleTileIds = new List<int>();
+        List<float> normalizedProbabilities = new List<float>();
+        for (int t = 0; t < tileCount; t++)
+        {
+            if (tileDomains[tileToCollapse.x, tileToCollapse.y, t])
+            {
+                possibleTileIds.Add(t);
+                normalizedProbabilities.Add(0);
+            }
+        }
+
+        // Sum together probability densities from adjacent collapsed cells
+        float probabilitySum = 0;
+
+        for (int d = 0; d < Directions.directions.Length; d++)
+        {
+            Vector2Int adjacentTilePosition = tileToCollapse + Directions.directions[d];
+            if (!LocationOutOfMapBounds(adjacentTilePosition) &&
+                !DomainOfTileIsEmpty(adjacentTilePosition) &&
+                resultTileIds[adjacentTilePosition.x, adjacentTilePosition.y] != null)
+            {
+                int adjacentTileId = resultTileIds[adjacentTilePosition.x, adjacentTilePosition.y].Value;
+                for (int i = 0; i < possibleTileIds.Count; i++)
+                {
+                    int currentTileId = possibleTileIds[i];
+                    float directionalProbability = directionalWeights[adjacentTileId, currentTileId, d];
+                    normalizedProbabilities[i] += directionalProbability;
+                    probabilitySum += directionalProbability;
+                }
+            }
+        }
+
+        // Normalize probabilities
+        for (int i = 0; i < normalizedProbabilities.Count; i++)
+        {
+            normalizedProbabilities[i] /= probabilitySum;
+        }
+
+        // Calculate tileId from options based on normalized probabilities
+        float randomValue = Random.Range(0f, 1f);
+        int tileId = -1;
+
+        float aggregatedProbability = 0;
+
+        for (int i = 0; i < possibleTileIds.Count; i++)
+        {
+            aggregatedProbability += normalizedProbabilities[i];
+
+            if (randomValue <= aggregatedProbability)
+            {
+                tileId = possibleTileIds[i];
                 break;
             }
         }
@@ -314,6 +419,21 @@ public class WFCAlgorithm
     private bool LocationOutOfMapBounds(Vector2Int location)
     {
         return location.x < 0 || location.y < 0 || location.x >= outputMapSize.x || location.y >= outputMapSize.y;
+    }
+
+    private bool DomainOfTileIsEmpty(Vector2Int tilePosition)
+    {
+        bool domainIsEmpty = true;
+
+        for (int t = 0; t < tileCount; t++)
+        {
+            if (tileDomains[tilePosition.x, tilePosition.y, t])
+            {
+                domainIsEmpty = false;
+                break;
+            }
+        }
+        return domainIsEmpty;
     }
 
     // Print the current entropy of all tiles as matrix

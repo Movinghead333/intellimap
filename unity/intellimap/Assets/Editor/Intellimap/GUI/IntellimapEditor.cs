@@ -154,6 +154,7 @@ public class IntellimapEditor : EditorWindow {
 
                 if (result == null)
                 {
+                    Debug.Log("Cells collapsed by frequency: " + currentWFCInstance.numberCellsCollapsedByFrequencyHints + " | by directional probabilities: " + currentWFCInstance.numberCellsCollapsedByDirectionalProbabilities);
                     currentWFCInstance = null;
                     return;
 
