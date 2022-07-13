@@ -14,6 +14,22 @@ public class GUIUtil {
         GUI.color = tempColor;
     }
 
+    public static bool CenteredButton(string text, float width, float height) {
+        bool pressed = false;
+
+        EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button(text, GUILayout.Width(width), GUILayout.Height(height))) {
+                pressed = true;
+            }
+
+            GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+
+        return pressed;
+    }
+
     public static float LimitToBounds(float f, float lower, float upper) {
         if (f < lower) {
             return lower;
@@ -37,5 +53,29 @@ public class GUIUtil {
         }
 
         return result;
+    }
+
+    public static bool InRectangle(Rect rect, float x, float y) {
+        return x >= rect.x && y >= rect.y && x < rect.x + rect.width && y < rect.y + rect.height;
+    }
+
+    public static bool LeftMouseButton() {
+        return Event.current.button == 0;
+    }
+
+    public static bool MouseDown() {
+        return Event.current.type == EventType.MouseDown;
+    }
+
+    public static bool MouseUp() {
+        return Event.current.type == EventType.MouseUp;
+    }
+
+    public static bool MouseDrag() {
+        return Event.current.type == EventType.MouseDrag;
+    }
+
+    public static bool MouseMove() {
+        return Event.current.type == EventType.MouseMove;
     }
 }

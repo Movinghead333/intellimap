@@ -16,39 +16,37 @@ public class TilemapStats {
     public int[,,] totalAdjacency;
     public float[,,] normalizedAdjacency;
 
-    public TilemapStats(Tilemap[] tilemapArray) {
-       
-        foreach(Tilemap tile in tilemapArray)
-        {
-            BuildIdMappings(tile);
-            tileCount = idToTile.Count;
+    public TilemapStats(Tilemap[] tilemaps) {
+        BuildIdMappings(tilemaps);
+        tileCount = idToTile.Count;
 
-            BuildFrequencyMapping(tile);
+        BuildFrequencyMapping(tilemaps);
 
-            ExtractAdjacency(tile);
-        }
-       
+        ExtractAdjacency(tilemaps);
     }
 
-    private void BuildIdMappings(Tilemap tilemap) {
+    private void BuildIdMappings(Tilemap[] tilemaps) {
         idToTile = new Dictionary<int, Tile>();
         tileToId = new Dictionary<Tile, int>();
 
         int idCounter = 0;
-        foreach (Vector3Int position in tilemap.cellBounds.allPositionsWithin) {
-            if (!tilemap.HasTile(position))
-                continue;
 
-            Tile tile = tilemap.GetTile<Tile>(position);
-            if (!tileToId.ContainsKey(tile)) {
-                tileToId[tile] = idCounter;
-                idToTile[idCounter] = tile;
-                idCounter++;
+        foreach (Tilemap tilemap in tilemaps) {
+            foreach (Vector3Int position in tilemap.cellBounds.allPositionsWithin) {
+                if (!tilemap.HasTile(position))
+                    continue;
+
+                Tile tile = tilemap.GetTile<Tile>(position);
+                if (!tileToId.ContainsKey(tile)) {
+                    tileToId[tile] = idCounter;
+                    idToTile[idCounter] = tile;
+                    idCounter++;
+                }
             }
         }
     }
 
-    private void BuildFrequencyMapping(Tilemap tilemap) {
+    private void BuildFrequencyMapping(Tilemap[] tilemaps) {
         tileOccurrences = new int[tileCount];
         tileFrequencies = new float[tileCount];
 
@@ -56,14 +54,16 @@ public class TilemapStats {
             tileOccurrences[i] = 0;
         }
 
-        foreach (Vector3Int position in tilemap.cellBounds.allPositionsWithin) {
-            if (!tilemap.HasTile(position))
-                continue;
+        foreach (Tilemap tilemap in tilemaps) {
+            foreach (Vector3Int position in tilemap.cellBounds.allPositionsWithin) {
+                if (!tilemap.HasTile(position))
+                    continue;
 
-            Tile tile = tilemap.GetTile<Tile>(position);
-            int tileId = tileToId[tile];
+                Tile tile = tilemap.GetTile<Tile>(position);
+                int tileId = tileToId[tile];
 
-            tileOccurrences[tileId]++;
+                tileOccurrences[tileId]++;
+            }
         }
 
         int occurrenceSum = tileOccurrences.Sum();
@@ -72,25 +72,27 @@ public class TilemapStats {
         }
     }
 
-    private void ExtractAdjacency(Tilemap tilemap) {
+    private void ExtractAdjacency(Tilemap[] tilemaps) {
         totalAdjacency = new int[tileCount, tileCount, 4];
         DataUtil.Zero3DArray(totalAdjacency);
 
-        foreach (Vector3Int initialTilePosition in tilemap.cellBounds.allPositionsWithin) {
-            if (!tilemap.HasTile(initialTilePosition))
-                continue;
+        foreach (Tilemap tilemap in tilemaps) {
+            foreach (Vector3Int initialTilePosition in tilemap.cellBounds.allPositionsWithin) {
+                if (!tilemap.HasTile(initialTilePosition))
+                    continue;
 
-            Tile tile = tilemap.GetTile<Tile>(initialTilePosition);
+                Tile tile = tilemap.GetTile<Tile>(initialTilePosition);
 
-            for (int d = 0; d < Directions.directions.Length; d++) {
-                Vector3Int direction = (Vector3Int)Directions.directions[d];
-                Vector3Int targetPosition = initialTilePosition + direction;
+                for (int d = 0; d < Directions.directions.Length; d++) {
+                    Vector3Int direction = (Vector3Int)Directions.directions[d];
+                    Vector3Int targetPosition = initialTilePosition + direction;
 
-                if (tilemap.HasTile(targetPosition)) {
-                    Tile targetTile = tilemap.GetTile<Tile>(targetPosition);
-                    int id1 = tileToId[tile];
-                    int id2 = tileToId[targetTile];
-                    totalAdjacency[id1, id2, d]++;
+                    if (tilemap.HasTile(targetPosition)) {
+                        Tile targetTile = tilemap.GetTile<Tile>(targetPosition);
+                        int id1 = tileToId[tile];
+                        int id2 = tileToId[targetTile];
+                        totalAdjacency[id1, id2, d]++;
+                    }
                 }
             }
         }

@@ -22,7 +22,7 @@ public class MatrixTestWindow : EditorWindow {
 
     public void OnEnable() {
         Color foregroundColor = new Color(0.8f, 0.8f, 0.8f);
-        matrix = new Matrix(3, foregroundColor, Color.clear, Color.grey, 0.5f, 20, this);
+        matrix = new Matrix(3, foregroundColor, Color.clear, Color.grey, Color.red, 0.5f, 20, this);
         testTiles = new Tile[3];
 
         serializedObject = new SerializedObject(this);
@@ -30,7 +30,7 @@ public class MatrixTestWindow : EditorWindow {
 
         detailView = new WeightBoxDetailView();
 
-        testBox = new WeightBox(50, 50, Color.white, Color.black, Color.blue, detailView, this);
+        testBox = new WeightBox(50, 50, Color.white, Color.black, Color.blue, Color.green, detailView);
     }
 
     private void OnGUI() {

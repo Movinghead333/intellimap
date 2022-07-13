@@ -3,11 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Tilemaps;
 
-[ExecuteInEditMode]
 public class IntellimapEditor : EditorWindow {
-   private static bool T = true;
-   private static bool F = false;
-
     private Vector2 scrollPos;
 
     private Tilemap targetTilemap;
@@ -21,7 +17,10 @@ public class IntellimapEditor : EditorWindow {
 
     private TilemapStats tilemapStats;
 
+    #nullable enable
     private WFCAlgorithm? currentWFCInstance;
+
+    public static bool repaint;
     
     // Register window as menu item
     [MenuItem ("Window/Intellimap")]
@@ -33,6 +32,9 @@ public class IntellimapEditor : EditorWindow {
         // This is needed to be able to register the MouseMove event
         wantsMouseMove = true;
 
+        // can be used by components to repaint the window
+        repaint = false;
+
         scrollPos = new Vector2(0, 0);
 
         targetWidth = 0;
@@ -42,7 +44,7 @@ public class IntellimapEditor : EditorWindow {
 
         Color foregroundColor = new Color(0.8f, 0.8f, 0.8f);
         Color backgroundColor = new Color(0.2f, 0.2f, 0.2f);
-        matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, 0.5f, 30, this);
+        matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, Color.white, 0.5f, 30, this);
         
         histogram = new Histogram(2);
     }
@@ -68,39 +70,8 @@ public class IntellimapEditor : EditorWindow {
 
             GUIUtil.HorizontalLine(Color.grey);
 
-            if (GUILayout.Button("Analyze Base Data")) {
-                TilemapStats tilemapStats = DataUtil.LoadTilemapStats(baseDataPath);
-                Debug.Log(tilemapStats);
-                this.tilemapStats = tilemapStats;
-
-                // Re-initialize matrix
-                Tile[] axisTiles = new Tile[tilemapStats.tileCount];
-                for (int i = 0; i < tilemapStats.tileCount; i++) {
-                    axisTiles[i] = tilemapStats.idToTile[i];
-                }
-
-                matrix.Init(tilemapStats.tileCount);
-                matrix.SetAxisTiles(axisTiles);
-
-                // Fill matrix with normalized adjacency values
-                float[] weights = new float[4];
-
-                for (int y = 0; y < tilemapStats.tileCount; y++) {
-                    for (int x = 0; x < tilemapStats.tileCount; x++) {
-                        if (x >= y) {
-                            for (int d = 0; d < 4; d++) {
-                                weights[d] = tilemapStats.normalizedAdjacency[y, x, d];
-                            }
-
-                            matrix.SetBoxWeights(x, y, weights);
-                        }
-                    }
-                }
-
-                // Re-initialize histogram
-                histogram.Init(tilemapStats.tileCount);
-                histogram.SetBottomTiles(axisTiles);
-                histogram.SetSliderValues(tilemapStats.tileFrequencies);
+            if (GUIUtil.CenteredButton("Analyze Base Data", 180, 25)) {
+                FillUIWithData();
             }
 
             matrix.Show();
@@ -111,15 +82,62 @@ public class IntellimapEditor : EditorWindow {
 
             GUIUtil.HorizontalLine(Color.grey);
 
-            if (GUILayout.Button("Collapse entire map")) {
-                CollapseEntireMapButtonPressed();
-            }
+            EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Collapse entire map", GUILayout.Width(150), GUILayout.Height(25))) {
+                        CollapseEntireMapButtonPressed();
+                    }
 
-            if (GUILayout.Button("Collapse single cell"))
-            {
-                SingleCellCollapseButtonPressed();
-            }
+                    if (GUILayout.Button("Collapse single cell", GUILayout.Width(150), GUILayout.Height(25))) {
+                        SingleCellCollapseButtonPressed();
+                    }
+
+                    if (GUILayout.Button("Clear", GUILayout.Width(80), GUILayout.Height(25))) {
+                        if (targetTilemap != null)
+                            targetTilemap.ClearAllTiles();
+                    }
+                GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         EditorGUILayout.EndScrollView();
+
+        if (repaint) {
+            Repaint();
+        }
+    }
+
+    private void FillUIWithData() {
+        TilemapStats tilemapStats = DataUtil.LoadTilemapStats(baseDataPath);
+        Debug.Log(tilemapStats);
+        this.tilemapStats = tilemapStats;
+
+        // Re-initialize matrix
+        Tile[] axisTiles = new Tile[tilemapStats.tileCount];
+        for (int i = 0; i < tilemapStats.tileCount; i++) {
+            axisTiles[i] = tilemapStats.idToTile[i];
+        }
+
+        matrix.Init(tilemapStats.tileCount);
+        matrix.SetAxisTiles(axisTiles);
+
+        // Fill matrix with normalized adjacency values
+        float[] weights = new float[4];
+
+        for (int y = 0; y < tilemapStats.tileCount; y++) {
+            for (int x = 0; x < tilemapStats.tileCount; x++) {
+                if (x >= y) {
+                    for (int d = 0; d < 4; d++) {
+                        weights[d] = tilemapStats.normalizedAdjacency[y, x, d];
+                    }
+
+                    matrix.SetBoxWeights(x, y, weights);
+                }
+            }
+        }
+
+        // Re-initialize histogram
+        histogram.Init(tilemapStats.tileCount);
+        histogram.SetBottomTiles(axisTiles);
+        histogram.SetSliderValues(tilemapStats.tileFrequencies);
     }
 
     // Execute the Wave Function Collapse Algorithm with the current set of input data
@@ -144,12 +162,6 @@ public class IntellimapEditor : EditorWindow {
                 RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
             }
         }
-
-        //int?[,] tileIdsMatrix = currentWFCInstance.RunCompleteCollapse();
-
-        //Render(tileIdsMatrix);
-
-        //currentWFCInstance = null;
     }
 
     private void SingleCellCollapseButtonPressed()
@@ -177,18 +189,24 @@ public class IntellimapEditor : EditorWindow {
         if (targetTilemap == null || tilemapStats == null || currentWFCInstance != null)
             return;
 
-        currentWFCInstance = new WFCAlgorithm(tilemapStats, new Vector2Int(targetWidth, targetHeight));
+        float[,,] directionalWeights = matrix.GetAllBoxWeights();
+        float[] tileFrequencies = histogram.GetNormalizedSliderValues();
+        Vector2Int targetMapSize = new Vector2Int(targetWidth, targetHeight);
+
+        currentWFCInstance = new WFCAlgorithm(directionalWeights, tileFrequencies, targetMapSize);
     }
 
     // Render the resulting tileIdMatrix to the selected Tilemap
-    private void Render(int?[,] tileIdsMatrix)
-    {
-        for (int x = 0; x < tileIdsMatrix.GetLength(0); x++)
-            for (int y = 0; y < tileIdsMatrix.GetLength(1); y++)
-                if (tileIdsMatrix[x, y].HasValue)
-                    RenderSingleCell(new Vector2Int(x, y), tileIdsMatrix[x, y].Value);
-
-    }
+    //private void Render(int?[,] tileIdsMatrix)
+    //{
+    //    for (int x = 0; x < tileIdsMatrix.GetLength(0); x++)
+    //        for (int y = 0; y < tileIdsMatrix.GetLength(1); y++)
+    //            if (tileIdsMatrix[x, y].HasValue)
+    //            {
+    //                int tiledId = tileIdsMatrix[x, y].Value;
+    //                RenderSingleCell(new Vector2Int(x, y), tiledId);
+    //            }
+    //}
 
     private void RenderSingleCell(Vector2Int tilePosition, int tileId)
     {

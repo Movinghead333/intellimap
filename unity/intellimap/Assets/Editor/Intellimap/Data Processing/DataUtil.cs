@@ -1,33 +1,44 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class DataUtil {
     public static TilemapStats LoadTilemapStats(string resourcePath) {
         string[] fileEntries = Directory.GetFiles(resourcePath);
-        //Debug.Log(resourcePath);
-        var root= Path.GetFileName(resourcePath);
-        TilemapStats tilemapStats = null;
-        GameObject parentObject = null;
-        List<Tilemap> tileArray = new List<Tilemap>();
-        foreach (string file in fileEntries)
-        {
-            
-            var newPath = root + "/" + Path.GetFileName(file);
-            if(!newPath.Contains("meta"))
-            {
-                newPath = newPath.Split(".")[0];
-                parentObject = Resources.Load(newPath) as GameObject;
+        List<Tilemap> tilemaps = new List<Tilemap>();
+
+        foreach (string filePath in fileEntries) {
+            string[] filePathSplit = filePath.Split("/");
+
+            string simpleFileName = filePathSplit[filePathSplit.Length - 1];
+            string[] simpleFileNameSplit = simpleFileName.Split(".");
+            string fileExtension = simpleFileNameSplit[simpleFileNameSplit.Length - 1];
+            // TODO: Deal with x.x.extension files
+            string simpleFileNameWithoutExtension = simpleFileNameSplit[0];
+
+            int resourcesFolderIndex = Array.IndexOf(filePathSplit, "Resources");
+            string pathInResourcesFolder = "";
+            for (int i = resourcesFolderIndex + 1; i < filePathSplit.Length - 1; i++) {
+                pathInResourcesFolder += filePathSplit[i] + "/";
             }
-            Tilemap tilemap = parentObject.GetComponent<Tilemap>();
-            tilemap.CompressBounds();
-            tileArray.Add(tilemap);
-       
+            pathInResourcesFolder += simpleFileNameWithoutExtension;
+
+            if (fileExtension == "prefab") {
+                GameObject parentObject = Resources.Load(pathInResourcesFolder) as GameObject;
+
+                Tilemap tilemap = parentObject.GetComponent<Tilemap>();
+                if (tilemap != null) {
+                    tilemap.CompressBounds();
+                    tilemaps.Add(tilemap);
+                }
+            }
+
         }
-        tilemapStats = new TilemapStats(tileArray.ToArray());
+
+        TilemapStats tilemapStats = new TilemapStats(tilemaps.ToArray());
         return tilemapStats;
     }
     
