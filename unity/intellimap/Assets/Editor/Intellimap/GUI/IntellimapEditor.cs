@@ -142,9 +142,14 @@ public class IntellimapEditor : EditorWindow {
                         CollapseEntireMapButtonPressed();
                     }
 
-                    if (GUILayout.Button("Collapse single cell", GUILayout.Width(150), GUILayout.Height(25))) {
-                        SingleCellCollapseButtonPressed();
+                    if (GUILayout.Button("Toggle Map Collapse", GUILayout.Width(150), GUILayout.Height(25)))
+                    {
+                        ToggleEntireMapCollapseAnimation();
                     }
+
+                    //if (GUILayout.Button("Collapse single cell", GUILayout.Width(150), GUILayout.Height(25))) {
+                    //    SingleCellCollapseButtonPressed();
+                    //}
 
                     if (GUILayout.Button("Clear", GUILayout.Width(80), GUILayout.Height(25))) {
                         ClearTargetTilemap();
@@ -216,6 +221,31 @@ public class IntellimapEditor : EditorWindow {
 
     // Execute the Wave Function Collapse Algorithm with the current set of input data
     private void CollapseEntireMapButtonPressed()
+    {
+        TryInitiliazeWFCInstance();
+
+        if (currentWFCInstance != null)
+        {
+            while(currentWFCInstance.AnyCellsLeftToCollapse())
+            {
+                (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
+
+                if (result == null)
+                {
+                    Debug.Log("Cells collapsed by frequency: " + currentWFCInstance.numberCellsCollapsedByFrequencyHints + " | by directional probabilities: " + currentWFCInstance.numberCellsCollapsedByDirectionalProbabilities);
+                    currentWFCInstance = null;
+                    wfcRunning = false;
+                    return;
+                }
+
+                RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
+            }
+            currentWFCInstance = null;
+            wfcRunning = false;
+        }
+    }
+
+    private void ToggleEntireMapCollapseAnimation()
     {
         TryInitiliazeWFCInstance();
 
