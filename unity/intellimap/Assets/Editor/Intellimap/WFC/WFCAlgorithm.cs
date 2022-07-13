@@ -22,8 +22,13 @@ public class WFCAlgorithm
 
     private int numberCellsToCollapse;
 
-    public WFCAlgorithm(float[,,] directionalWeights, float[] tileFrequencies, Vector2Int outputMapSize)
+    public WFCAlgorithm(float[,,] directionalWeights, float[] tileFrequencies, Vector2Int outputMapSize, int? seed)
     {
+        if (seed != null)
+        {
+            Random.InitState(seed.Value);
+        }
+        
         this.directionalWeights = directionalWeights;
         this.tileFrequencies = tileFrequencies;
         tileCount = tileFrequencies.Length;

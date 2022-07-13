@@ -193,7 +193,11 @@ public class IntellimapEditor : EditorWindow {
         float[] tileFrequencies = histogram.GetNormalizedSliderValues();
         Vector2Int targetMapSize = new Vector2Int(targetWidth, targetHeight);
 
-        currentWFCInstance = new WFCAlgorithm(directionalWeights, tileFrequencies, targetMapSize);
+        int seed = Random.Range(int.MinValue, int.MaxValue);
+
+        Debug.Log("Running WFC with seed: " + seed);
+
+        currentWFCInstance = new WFCAlgorithm(directionalWeights, tileFrequencies, targetMapSize, seed);
     }
 
     // Render the resulting tileIdMatrix to the selected Tilemap
