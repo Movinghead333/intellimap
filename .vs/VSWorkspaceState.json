@@ -1,4 +1,15 @@
 {
-  "ExpandedNodes": [],
+  "ExpandedNodes": [
+    "",
+    "\\intellimap",
+    "\\unity",
+    "\\unity\\intellimap",
+    "\\unity\\intellimap\\Assets",
+    "\\unity\\intellimap\\Assets\\Editor",
+    "\\unity\\intellimap\\Assets\\Editor\\Intellimap",
+    "\\unity\\intellimap\\Assets\\Editor\\Intellimap\\Data Processing",
+    "\\unity\\intellimap\\Packages"
+  ],
+  "SelectedNode": "\\unity\\intellimap\\Assets\\Editor\\Intellimap\\Data Processing\\TilemapStats.cs",
   "PreviewInSolutionExplorer": false
 }

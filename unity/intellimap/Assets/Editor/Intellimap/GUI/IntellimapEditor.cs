@@ -91,8 +91,11 @@ public class IntellimapEditor : EditorWindow {
                     if (GUILayout.Button("Collapse single cell", GUILayout.Width(150), GUILayout.Height(25))) {
                         SingleCellCollapseButtonPressed();
                     }
+                    if (GUILayout.RepeatButton("Collapse Multiple cell", GUILayout.Width(150), GUILayout.Height(25))){
+                        CollapseMultipleCell();
+                    }
 
-                    if (GUILayout.Button("Clear", GUILayout.Width(80), GUILayout.Height(25))) {
+        if (GUILayout.Button("Clear", GUILayout.Width(80), GUILayout.Height(25))) {
                         if (targetTilemap != null)
                             targetTilemap.ClearAllTiles();
                     }
@@ -163,6 +166,29 @@ public class IntellimapEditor : EditorWindow {
             }
         }
     }
+    private void CollapseMultipleCell()
+    {
+        TryInitiliazeWFCInstance();
+
+        if (currentWFCInstance != null)
+        {
+            (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
+
+            if (result == null)
+            {
+                // Reset the WFC instance if we receive null as a result of single cell collapse
+                currentWFCInstance = null;
+
+            }
+            else
+            {
+                RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
+            }
+        }
+
+    }
+    
+
 
     private void SingleCellCollapseButtonPressed()
     {
