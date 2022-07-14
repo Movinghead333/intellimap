@@ -148,6 +148,11 @@ public class WFCAlgorithm
 
     private void DetermineTileIdWithFrequencyHints(Vector2Int tileToCollapse)
     {
+        if (DomainOfTileIsEmpty(tileToCollapse))
+        {
+            throw new System.Exception("Wave Function Collapse encountered contradiction. Aborting current run.");
+        }
+
         numberCellsCollapsedByFrequencyHints++;
 
         List<int> possibleTilesIds = new List<int>();

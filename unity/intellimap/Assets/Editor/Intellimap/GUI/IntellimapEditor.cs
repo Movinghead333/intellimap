@@ -228,20 +228,11 @@ public class IntellimapEditor : EditorWindow {
         {
             while(currentWFCInstance.AnyCellsLeftToCollapse())
             {
-                (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
-
-                if (result == null)
-                {
-                    Debug.Log("Cells collapsed by frequency: " + currentWFCInstance.numberCellsCollapsedByFrequencyHints + " | by directional probabilities: " + currentWFCInstance.numberCellsCollapsedByDirectionalProbabilities);
-                    currentWFCInstance = null;
-                    wfcRunning = false;
-                    return;
-                }
-
-                RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
+                RunWFCStep();
             }
-            currentWFCInstance = null;
-            wfcRunning = false;
+
+            // Reset the instance after the run has finished
+            ResetWFCInstance();
         }
     }
 
@@ -257,38 +248,34 @@ public class IntellimapEditor : EditorWindow {
 
     private void Update()
     {
-        if (wfcRunning && currentWFCInstance != null)
+        if (wfcRunning)
         {
-            (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
-
-            if (result == null)
-            {
-                Debug.Log("Cells collapsed by frequency: " + currentWFCInstance.numberCellsCollapsedByFrequencyHints + " | by directional probabilities: " + currentWFCInstance.numberCellsCollapsedByDirectionalProbabilities);
-                currentWFCInstance = null;
-                wfcRunning = false;
-                return;
-            }
-
-            RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
+            RunWFCStep();
         }
     }
 
-    private void SingleCellCollapseButtonPressed()
+    private void RunWFCStep()
     {
-        TryInitiliazeWFCInstance();
-
         if (currentWFCInstance != null)
         {
-            (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
+            try
+            {
+                (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
 
-            if (result == null)
-            {
-                // Reset the WFC instance if we receive null as a result of single cell collapse
-                currentWFCInstance = null;
-            }
-            else
-            {
+                if (result == null)
+                {
+                    Debug.Log("Cells collapsed by frequency: " + currentWFCInstance.numberCellsCollapsedByFrequencyHints + " | by directional probabilities: " + currentWFCInstance.numberCellsCollapsedByDirectionalProbabilities);
+                    ResetWFCInstance();
+                    return;
+                }
+
                 RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
+            }
+            catch (System.Exception e)
+            {
+                // We might run into a contradiction of the WFC algorithm in this case just reset and show a message
+                ShowNotification(new GUIContent(e.Message));
+                ResetWFCInstance();
             }
         }
     }
@@ -326,20 +313,14 @@ public class IntellimapEditor : EditorWindow {
         currentWFCInstance = new WFCAlgorithm(directionalWeights, tileFrequencies, targetMapSize, seed);
     }
 
-    // Render the resulting tileIdMatrix to the selected Tilemap
-    //private void Render(int?[,] tileIdsMatrix)
-    //{
-    //    for (int x = 0; x < tileIdsMatrix.GetLength(0); x++)
-    //        for (int y = 0; y < tileIdsMatrix.GetLength(1); y++)
-    //            if (tileIdsMatrix[x, y].HasValue)
-    //            {
-    //                int tiledId = tileIdsMatrix[x, y].Value;
-    //                RenderSingleCell(new Vector2Int(x, y), tiledId);
-    //            }
-    //}
-
     private void RenderSingleCell(Vector2Int tilePosition, int tileId)
     {
         targetTilemap.SetTile(new Vector3Int(tilePosition.x, tilePosition.y, 0), tilemapStats.idToTile[tileId]);
+    }
+
+    private void ResetWFCInstance()
+    {
+        wfcRunning = false;
+        currentWFCInstance = null;
     }
 }
