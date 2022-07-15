@@ -258,7 +258,7 @@ public class WFCAlgorithm
                 for (int i = 0; i < possibleTileIds.Count; i++)
                 {
                     int currentTileId = possibleTileIds[i];
-                    float directionalProbability = directionalWeights[adjacentTileId, currentTileId, d];
+                    float directionalProbability = directionalWeights[adjacentTileId, currentTileId, d]; //* tileFrequencies[currentTileId];
                     normalizedProbabilities[i] += directionalProbability;
                     probabilitySum += directionalProbability;
                 }
