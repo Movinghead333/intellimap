@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class TextureBox : Box {
     private Texture2D externalTexture;
@@ -11,25 +8,20 @@ public class TextureBox : Box {
         : this(10, 10, backgroundColor, borderColor) {}
     
     public TextureBox(int width, int height, Color backgroundColor, Color borderColor)
-        : base(width, height, Color.clear, backgroundColor, borderColor)
+        : base(width, height, backgroundColor, borderColor)
     {
-        externalTexture = null;
-        UpdateTexture();
-    }
-
-    public void FillMagenta() {
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                texture.SetPixel(x, y, Color.magenta);
-            }
-        }
-        texture.Apply();
+        SetNoTexture();
     }
 
     public void SetTexture(Texture2D newTexture, Rect textureRect) {
         externalTexture = newTexture;
         externalTextureRect = textureRect;
         UpdateTexture();
+    }
+
+    public void SetNoTexture() {
+        externalTexture = null;
+        DrawBackground();
     }
 
     private void UpdateTexture() {
@@ -41,6 +33,7 @@ public class TextureBox : Box {
         }
     }
 
+    // TODO: Also make this more efficient!
     private void DrawExternalTextureOnBackground() {
         int startX = (int)(width / 2 - externalTextureRect.width / 2);
         int startY = (int)(height / 2 - externalTextureRect.height / 2);
@@ -79,5 +72,4 @@ public class TextureBox : Box {
         base.Resize(width, height);
         UpdateTexture();
     }
-
 }

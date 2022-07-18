@@ -1,16 +1,17 @@
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
 using System;
-using UnityEngine.Tilemaps;
 using System.Linq;
+using UnityEngine;
+using UnityEngine.Tilemaps;
 
-using static GUIUtil;
-
+/*
+ * The histogram used to dynamically update while interacting with one slider.
+ * We had another iteration where you could change one slider by itself, and once you let go, the histogram gets normalized again.
+ * Either behaviour was really cool with a low number of tiles.
+ * But we found that, using a realistic number of tiles, it was really unhelpful because most sliders would be so low that you coudn't get a feel for how they were moving.
+ * So now the user can simply change the sliders without a dynamic update, and the values are normalized internally before the WFC algorithm.
+ * This way it is slightly less "intelligent", but much more usable, and the user can set exactly the distribution they want without having the hassle of other sliders moving away constantly.
+ */
 public class Histogram : SliderGroup {
-    //private int changedSliderIndex;
-    //private float changedSliderOriginalValue;
-
     public Histogram(int size)
         : base(size, Color.clear, Color.grey)
     {
@@ -18,106 +19,16 @@ public class Histogram : SliderGroup {
             sliderValues[i] = 1f / size;
         }
 
-        //changedSliderIndex = -1;
-
         UpdateTextBoxes();
     }
-
-    public override void Show() {
-        /*if (LeftMouseButton() && MouseUp()) {
-            AdjustAllSliders();
-            changedSliderIndex = -1;
-        }*/
-
-        base.Show();
-    }
-
-    protected override void ReactToSliderChange(int changedSliderIndex, float newSliderValue) {
-        //AdjustOtherSliders(changedSliderIndex, newSliderValue);
-
-        /*if (this.changedSliderIndex == -1) {
-            this.changedSliderIndex = changedSliderIndex;
-            changedSliderOriginalValue = sliderValues[changedSliderIndex];
-        }*/
-    }
-
-    /*
-    private void AdjustOtherSliders(int changedSliderIndex, float newSliderValue) {
-        float diff = newSliderValue - sliderValues[changedSliderIndex];
-
-        // Collect distance to end for every slider
-        float[] otherSlidersDistancesToEnd = new float[numSliders];
-
-        if (isPositive(diff)) {
-            for (int i = 0; i < numSliders; i++) {
-                if (i == changedSliderIndex)
-                    otherSlidersDistancesToEnd[i] = 0f;
-                else
-                    otherSlidersDistancesToEnd[i] = sliderValues[i];
-            }
-        }
-        else {
-            for (int i = 0; i < numSliders; i++) {
-                if (i == changedSliderIndex)
-                    otherSlidersDistancesToEnd[i] = 0f;
-                else
-                    otherSlidersDistancesToEnd[i] = 1f - sliderValues[i];
-            }
-        }
-
-        float otherSlidersSum = otherSlidersDistancesToEnd.Sum();
-        // Adjust other sliders
-        if (otherSlidersSum > 0) {
-            for (int i = 0; i < numSliders; i++) {
-                if (i == changedSliderIndex) continue;
-   
-                float percentChangeToSlider = otherSlidersDistancesToEnd[i] / otherSlidersSum;
-                float changeToSlider = percentChangeToSlider * -diff;
-
-                sliderValues[i] = RoundOnEdge(LimitToBounds(sliderValues[i] + changeToSlider, lower: 0f, upper: 1f));
-            }
-        }
-    }
-
-    private void AdjustAllSliders() {
-        float diff = sliderValues[changedSliderIndex] - changedSliderOriginalValue;
-
-        // Collect distance to end for every slider
-        float[] slidersDistancesToEnd = new float[numSliders];
-
-        if (isPositive(diff)) {
-            for (int i = 0; i < numSliders; i++) {
-                slidersDistancesToEnd [i] = sliderValues[i];
-            }
-        }
-        else {
-            for (int i = 0; i < numSliders; i++) {
-                slidersDistancesToEnd [i] = 1f - sliderValues[i];
-            }
-        }
-
-        float distancesSum = slidersDistancesToEnd.Sum();
-        if (distancesSum > 0) {
-            for (int i = 0; i < numSliders; i++) {
-                float percentChangeToSlider = slidersDistancesToEnd [i] / distancesSum;
-                float changeToSlider = percentChangeToSlider * -diff;
-
-                sliderValues[i] = RoundOnEdge(LimitToBounds(sliderValues[i] + changeToSlider, lower: 0f, upper: 1f));
-            }
-        }
-
-        UpdateTextBoxes();
-    }
-
-    */
 
     public float[] GetNormalizedSliderValues() {
-        float[] result = new float[sliderValues.Count];
+        float[] result = new float[sliderValues.Length];
 
         float sum = sliderValues.Sum();
 
         if (sum > 0) {
-            for (int i = 0; i < sliderValues.Count; i++) {
+            for (int i = 0; i < sliderValues.Length; i++) {
                 result[i] = sliderValues[i] / sum;
             }
         }
@@ -125,8 +36,8 @@ public class Histogram : SliderGroup {
         return result;
     }
 
-    public override void SetSliderValues(List<float> newSliderValues) {
-        for (int i = 0; i < newSliderValues.Count; i++) {
+    public override void SetSliderValues(float[] newSliderValues) {
+        for (int i = 0; i < newSliderValues.Length; i++) {
             if (newSliderValues[i] > 1f || newSliderValues[i] < 0f) {
                 throw new ArgumentException("All slider values have to be between 0 and 1.");
             }
@@ -146,7 +57,7 @@ public class Histogram : SliderGroup {
                 textureBoxes[i].SetTexture(sprite.texture, sprite.textureRect);
             }
             else {
-                textureBoxes[i].SetTexture(null, new Rect());
+                textureBoxes[i].SetNoTexture();
             }
         }
     }

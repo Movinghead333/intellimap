@@ -1,9 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
-using System;
 using UnityEngine.Tilemaps;
+using UnityEditor;
+
+/*
+ * This is a class that was just used for testing, mainly for the matrix and weight boxes.
+ * Leaving the old debug test code in here would not be helpful though, since constructors and a lot more changed.
+ */
 
 public class MatrixTestWindow : EditorWindow {
     public Tile[] testTiles;
@@ -13,7 +15,7 @@ public class MatrixTestWindow : EditorWindow {
     Matrix matrix;
 
     WeightBox testBox;
-    WeightBoxDetailView detailView;
+    DetailView detailView;
 
     [MenuItem ("Window/Matrix Test")]
     public static void ShowWindow() {
@@ -28,7 +30,7 @@ public class MatrixTestWindow : EditorWindow {
         serializedObject = new SerializedObject(this);
         serializedProperty = serializedObject.FindProperty("testTiles");
 
-        detailView = new WeightBoxDetailView();
+        detailView = new DetailView();
 
         testBox = new WeightBox(50, 50, Color.white, Color.black, Color.blue, Color.green, detailView);
     }
@@ -48,11 +50,9 @@ public class MatrixTestWindow : EditorWindow {
         GUIUtil.HorizontalLine(Color.grey);
 
         EditorGUILayout.BeginHorizontal();
-
-        GUILayout.Space(15);
-        testBox.Show();
-        detailView.Show();
-
+            GUILayout.Space(15);
+            testBox.Show();
+            detailView.Show();
         EditorGUILayout.EndHorizontal();
     }
 }

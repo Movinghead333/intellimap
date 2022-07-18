@@ -1,35 +1,34 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class WeightBoxDetailView {
+public class DetailView {
+    private bool foldedOut;
+
     private WeightBox box;
 
-    private bool foldedOut;
-    private float value;
+    private float textValue;
     private DetailViewSliderGroup weightSliders;
     private TextureBox arrowBoxBetweenSlidersAndText;
 
-    public WeightBoxDetailView() {
+    public DetailView() {
+        foldedOut = false;
+
         box = null;
-        value = 0f;
 
+        textValue = 0f;
         weightSliders = new DetailViewSliderGroup(75, this);
-        
+
         arrowBoxBetweenSlidersAndText = new TextureBox(20, 20, Color.clear, Color.clear);
-
         Texture2D rightArrowTexture = Resources.Load("Arrow_right_empty") as Texture2D;
-        Rect textureRect = new Rect(0, 0, rightArrowTexture.width, rightArrowTexture.height);
-
-        arrowBoxBetweenSlidersAndText.SetTexture(rightArrowTexture, textureRect);
+        Rect rightArrowTextureRect = new Rect(0, 0, rightArrowTexture.width, rightArrowTexture.height);
+        arrowBoxBetweenSlidersAndText.SetTexture(rightArrowTexture, rightArrowTextureRect);
     }
 
     public void Show() {
         GUILayout.Space(10);
 
         EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(15);
+            GUILayout.Space(IntellimapEditor.startingSpace);
             foldedOut = EditorGUILayout.Foldout(foldedOut, "Detail View");
         EditorGUILayout.EndHorizontal();
 
@@ -49,9 +48,9 @@ public class WeightBoxDetailView {
                     GUILayout.Space(42.5f);
 
                     GUILayout.Label("Value:");
-                    float newValue = EditorGUILayout.FloatField(value, GUILayout.Width(72));
-                    if (newValue != value && box != null) {
-                        newValue = GUIUtil.LimitToBounds(newValue, 0f, 1f);
+                    float newValue = EditorGUILayout.FloatField(textValue, GUILayout.Width(72));
+                    if (newValue != textValue && box != null) {
+                        newValue = GUIUtil.LimitToBounds(newValue, lower: 0f, upper: 1f);
                         box.SetPercentage(newValue);
                     }
                 EditorGUILayout.EndVertical();
@@ -63,8 +62,9 @@ public class WeightBoxDetailView {
 
     public void SetBox(WeightBox box) {
         this.box = box;
+
         if (box != null) {
-            value = box.GetPercentage();
+            textValue = box.GetPercentage();
             weightSliders.SetWeightBox(box);
         }
     }
@@ -74,7 +74,7 @@ public class WeightBoxDetailView {
     }
 
     public void UpdateFromBox() {
-        value = box.GetPercentage();
+        textValue = box.GetPercentage();
         weightSliders.SetSliderValues(box.GetWeights());
     }
 
@@ -82,7 +82,7 @@ public class WeightBoxDetailView {
         if (box != null) {
             box.SetWeights(weights);
             box.UpdatePercentageByWeights();
-            value = box.GetPercentage();
+            textValue = box.GetPercentage();
         }
     }
 }

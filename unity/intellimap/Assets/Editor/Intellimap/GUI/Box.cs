@@ -1,22 +1,20 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Box {
     protected int width;
     protected int height;
+
     protected Texture2D texture;
     protected GUIStyle style;
     protected GUIContent content;
 
-    protected Color foregroundColor;
     protected Color backgroundColor;
     protected Color borderColor;
 
     protected Box()
-        : this(10, 10, Color.clear, Color.clear, Color.clear) {}
+        : this(10, 10, Color.clear, Color.clear) {}
 
-    protected Box(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor) {
+    protected Box(int width, int height, Color backgroundColor, Color borderColor) {
         this.width = width;
         this.height = height;
 
@@ -31,7 +29,6 @@ public class Box {
 
         content = new GUIContent();
 
-        this.foregroundColor = foregroundColor;
         this.backgroundColor = backgroundColor;
         this.borderColor = borderColor;
     }
@@ -58,10 +55,6 @@ public class Box {
         content.tooltip = tooltip;
     }
 
-    public virtual void SetAlpha(float alpha) {
-        foregroundColor = new Color(foregroundColor.r, foregroundColor.g, foregroundColor.b, alpha);
-    }
-
     public virtual void SetContentOffset(float x, float y) {
         style.contentOffset = new Vector2(x, y);
     }
@@ -72,5 +65,9 @@ public class Box {
             return true;
         }
         return false;
+    }
+
+    protected bool OnBorder(int x, int y) {
+        return (y == 0 || x == 0 || y == height - 1 || x == width - 1);
     }
 }

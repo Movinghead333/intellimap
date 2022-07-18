@@ -1,12 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class DetailViewSliderGroup : SliderGroup {
-    private WeightBox box;
-    private WeightBoxDetailView detailView;
+    private DetailView detailView;
 
-    public DetailViewSliderGroup(int height, WeightBoxDetailView detailView)
+    public DetailViewSliderGroup(int height, DetailView detailView)
         : base(4, Color.clear, Color.clear, height)
     {
         this.detailView = detailView;
@@ -23,17 +20,16 @@ public class DetailViewSliderGroup : SliderGroup {
         textureBoxes[2].SetTexture(downArrowTexture, textureRect);
         textureBoxes[3].SetTexture(leftArrowTexture, textureRect);
 
-        box = null;
         SetSliderValues(new float[]{0f, 0f, 0f, 0f});
         UpdateTextBoxes();
     }
 
     public void SetWeightBox(WeightBox box) {
-        this.box = box;
         SetSliderValues(box.GetWeights());
     }
 
+    // Gets called when sliders changed
     protected override void SlidersChanged() {
-        detailView.UpdateFromSliders(GetSliderValues().ToArray());
+        detailView.UpdateFromSliders(GetSliderValues());
     }
 }
