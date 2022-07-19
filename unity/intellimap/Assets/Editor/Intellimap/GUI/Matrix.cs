@@ -48,10 +48,14 @@ public class Matrix {
 
         detailView = new DetailView();
 
+        Color weightBoxBorderColor = new Color(borderColor.r, borderColor.g, borderColor.b, 0.3f);
+
         boxes = new WeightBox[size * size];
         for (int i = 0; i < size * size; i++) {
-            boxes[i] = new WeightBox(foregroundColor, backgroundColor, borderColor, highlightBorderColor, detailView);
+            boxes[i] = new WeightBox(foregroundColor, backgroundColor, weightBoxBorderColor, highlightBorderColor, detailView);
         }
+
+        Color diagonalBackgroundColor = new Color(backgroundColor.r + 0.05f, backgroundColor.g + 0.05f, backgroundColor.b + 0.05f);
 
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
@@ -61,13 +65,12 @@ public class Matrix {
                     int otherIndex = x * size + y;
                     boxes[thisIndex].connectWith(boxes[otherIndex]);
                 }
-                else if (x < y) {
-                    boxes[thisIndex].SetAlpha(0.6f);
+                else if (x == y) {
+                    boxes[thisIndex].SetBackgroundColor(diagonalBackgroundColor);
                 }
             }
         }
 
-        // Could hold text, but is just empty
         axisTitleBox = new TextureBox(backgroundColor, borderColor);
 
         axisBoxes = new TextureBox[size];

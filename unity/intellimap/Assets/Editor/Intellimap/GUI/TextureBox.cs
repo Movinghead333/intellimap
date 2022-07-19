@@ -33,38 +33,50 @@ public class TextureBox : Box {
         }
     }
 
-    // TODO: Also make this more efficient!
     private void DrawExternalTextureOnBackground() {
         int startX = (int)(width / 2 - externalTextureRect.width / 2);
         int startY = (int)(height / 2 - externalTextureRect.height / 2);
         Rect externalTextureDrawRegion = new Rect(startX, startY, externalTextureRect.width, externalTextureRect.height);
 
+        Color[] pixels = new Color[width * height];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                if (!DrawBorder(x, y)) {
-                    if (GUIUtil.InRectangle(externalTextureDrawRegion, x, y)) {
-                        Color pixel = externalTexture.GetPixel((int)externalTextureRect.x + x - startX, (int)externalTextureRect.y + y - startY);
-                        texture.SetPixel(x, y, pixel);
-                    }
-                    else {
-                        texture.SetPixel(x, y, backgroundColor);
-                    }
+                int index = y * width + x;
+
+                if (OnBorder(x, y)) {
+                    pixels[index] = borderColor;
+                }
+                else if (GUIUtil.InRectangle(externalTextureDrawRegion, x, y)) {
+                    int externalX = (int)externalTextureRect.x + x - startX;
+                    int externalY = (int)externalTextureRect.y + y - startY;
+                    pixels[index] = externalTexture.GetPixel(externalX, externalY);
+                }
+                else {
+                    pixels[index] = backgroundColor;
                 }
             }
         }
 
+        texture.SetPixels(pixels);
         texture.Apply();
     }
 
     private void DrawBackground() {
+        Color[] pixels = new Color[width * height];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                if (!DrawBorder(x, y)) {
-                    texture.SetPixel(x, y, backgroundColor);
+                int index = y * width + x;
+
+                if (OnBorder(x, y)) {
+                    pixels[index] = borderColor;
+                }
+                else {
+                    pixels[index] = backgroundColor;
                 }
             }
         }
 
+        texture.SetPixels(pixels);
         texture.Apply();
     }
     

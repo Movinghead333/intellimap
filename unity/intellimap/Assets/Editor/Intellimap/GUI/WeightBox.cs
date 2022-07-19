@@ -66,6 +66,23 @@ public class WeightBox : Box {
 
         bool inRect = InRectangle(boxRect, mouseX, mouseY);
 
+        if (LeftMouseButton()) {
+            if (MouseDown() && inRect) {
+                dragStartedInBox = true;
+
+                detailView.SetBox(this);
+                IntellimapEditor.repaint = true;
+            }
+            
+            if (dragStartedInBox && MouseDrag()) {
+                HandleMouseDragEvent(mouseY, boxRect.y);
+            }
+
+            if (MouseUp()) {
+                dragStartedInBox = false;
+            }
+        }
+
         if (MouseMove()) {
             if (!mouseIn && inRect) {
                 mouseIn = true;
@@ -94,23 +111,6 @@ public class WeightBox : Box {
                 }
 
                 IntellimapEditor.repaint = true;
-            }
-        }
-
-        if (LeftMouseButton()) {
-            if (MouseDown() && inRect) {
-                dragStartedInBox = true;
-
-                detailView.SetBox(this);
-                IntellimapEditor.repaint = true;
-            }
-            
-            if (dragStartedInBox && MouseDrag()) {
-                HandleMouseDragEvent(mouseY, boxRect.y);
-            }
-
-            if (MouseUp()) {
-                dragStartedInBox = false;
             }
         }
 
@@ -154,27 +154,45 @@ public class WeightBox : Box {
         return currentPercentage;
     }
 
-    // TODO: Refactor this
     public void SetPercentage(float percentage) {
         percentage = LimitToBounds(percentage, lower: 0f, upper: 1f);
-
-        float diff = percentage - currentPercentage;
-        if (diff == 0) {
+        if (percentage == currentPercentage) {
             return;
         }
 
-        float percentageDistance;
-        float[] weightDistances = new float[4];
+        float[] change = calculateWeightChange(percentage);
+        for (int i = 0; i < 4; i++) {
+            weights[i] = LimitToBounds(weights[i] + change[i], lower: 0f, upper: 1f);
+        }
+        
+        currentPercentage = percentage;
+
+        if (detailView.GetBox() != this) {
+            detailView.SetBox(this);
+        }
+        detailView.UpdateFromBox();
+
+        UpdateTexture();
+        SetText(GetPercentage().ToString());
+
+        UpdateConnectedBox();
+    }
+
+    private float[] calculateWeightChange(float newPercentage) {
         float[] change = new float[4];
 
-        // calculate change per weight
+        float diff = newPercentage - currentPercentage;
+
+        float percentageDistance;
+        float[] weightDistances = new float[4];
+
         if (isPositive(diff)) {
             // going up
 
             if (currentPercentage < startingPercentage) {
                 // going up towards the starting percentage
 
-                if (percentage > startingPercentage) {
+                if (newPercentage > startingPercentage) {
                     // overshooting the starting percentage upwards, needs 2 steps:
 
                     // until the starting percentage, take the distance to the starting percentage
@@ -185,7 +203,6 @@ public class WeightBox : Box {
 
                     float diffPercentage = (startingPercentage - currentPercentage) / diff;
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] = diffPercentage * diff * speed;
@@ -197,7 +214,6 @@ public class WeightBox : Box {
                         weightDistances[i] = 1f - startingWeights[i];
                     }
                     
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] += (1 - diffPercentage) * diff * speed;
@@ -210,7 +226,6 @@ public class WeightBox : Box {
                         weightDistances[i] = startingWeights[i] - weights[i];
                     }
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] = diff * speed;
@@ -224,7 +239,6 @@ public class WeightBox : Box {
                     weightDistances[i] = 1f - weights[i];
                 }
 
-                // calculate change
                 for (int i = 0; i < 4; i++) {
                     float speed = weightDistances[i] / percentageDistance;
                     change[i] = diff * speed;
@@ -237,7 +251,7 @@ public class WeightBox : Box {
             if (currentPercentage > startingPercentage) {
                 // going down towards the starting percentage
 
-                if (percentage < startingPercentage) {
+                if (newPercentage < startingPercentage) {
                     // overshooting the starting percentage downwards, needs 2 steps:
                     
                     // until the starting percentage, take the distance to the starting percentage
@@ -248,7 +262,6 @@ public class WeightBox : Box {
 
                     float diffPercentage = (currentPercentage - startingPercentage) / Mathf.Abs(diff);
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] = (diffPercentage * diff) * speed;
@@ -260,7 +273,6 @@ public class WeightBox : Box {
                         weightDistances[i] = startingWeights[i];
                     }
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] += ((1 - diffPercentage) * diff) * speed;
@@ -273,7 +285,6 @@ public class WeightBox : Box {
                         weightDistances[i] = weights[i] - startingWeights[i];
                     }
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] = diff * speed;
@@ -287,7 +298,6 @@ public class WeightBox : Box {
                     weightDistances[i] = weights[i];
                 }
 
-                // calculate change
                 for (int i = 0; i < 4; i++) {
                     float speed = weightDistances[i] / percentageDistance;
                     change[i] = diff * speed;
@@ -295,27 +305,14 @@ public class WeightBox : Box {
             }
         }
 
-        // Update the weights
-        for (int i = 0; i < 4; i++) {
-            weights[i] = LimitToBounds(weights[i] + change[i], lower: 0f, upper: 1f);
-        }
-        
-        currentPercentage = percentage;
-
-        if (detailView.GetBox() != this) {
-            detailView.SetBox(this);
-        }
-
-        detailView.UpdateFromBox();
-
-        UpdateTexture();
-        SetText(GetPercentage().ToString());
-
-        UpdateConnectedBox();
+        return change;
     }
 
     public void SetAlpha(float alpha) {
         foregroundColor = new Color(foregroundColor.r, foregroundColor.g, foregroundColor.b, alpha);
+        
+        //borderColor = new Color(borderColor.r, borderColor.g, borderColor.b, alpha);
+        //originalBorderColor = borderColor;
     }
 
     public override void Resize(int width, int height) {

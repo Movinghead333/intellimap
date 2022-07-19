@@ -55,7 +55,7 @@ public class IntellimapEditor : EditorWindow {
 
         Color foregroundColor = new Color(0.8f, 0.8f, 0.8f);
         Color backgroundColor = new Color(0.2f, 0.2f, 0.2f);
-        matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, Color.white, 0.9f, 30, this);
+        matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, Color.white, 0.9f, 20, this);
         
         histogram = new Histogram(2);
     }
@@ -75,11 +75,12 @@ public class IntellimapEditor : EditorWindow {
                 GUILayout.Space(startingSpace);
 
                 baseDataPath = EditorGUILayout.TextField("Base data:", baseDataPath);
-
-                if (GUILayout.Button("...", GUILayout.Width(25))) {
-                    baseDataPath = EditorUtility.OpenFolderPanel("Open base data folder", Application.dataPath, "");
-                }
+                bool openBaseDataFolder = GUILayout.Button("...", GUILayout.Width(25));
             EditorGUILayout.EndHorizontal();
+
+            if (openBaseDataFolder) {
+                baseDataPath = EditorUtility.OpenFolderPanel("Open base data folder", Application.dataPath, "");
+            }
 
             EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(startingSpace);
@@ -154,7 +155,7 @@ public class IntellimapEditor : EditorWindow {
                     }
                 GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
-            
+
         EditorGUILayout.EndScrollView();
 
         if (repaint) {

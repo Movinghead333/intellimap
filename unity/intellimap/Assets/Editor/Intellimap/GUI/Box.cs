@@ -59,6 +59,10 @@ public class Box {
         style.contentOffset = new Vector2(x, y);
     }
 
+    public void SetBackgroundColor(Color backgroundColor) {
+        this.backgroundColor = backgroundColor;
+    }
+
     protected bool DrawBorder(int x, int y) {
         if (y == 0 || x == 0 || y == height - 1 || x == width - 1) {
             texture.SetPixel(x, y, borderColor);

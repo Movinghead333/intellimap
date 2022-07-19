@@ -35,6 +35,7 @@ public class DetailView {
         if (foldedOut) {
             EditorGUILayout.BeginHorizontal();
                 weightSliders.Show();
+
                 GUILayout.Space(15);
 
                 EditorGUILayout.BeginVertical();

@@ -5,8 +5,8 @@ using UnityEditor;
 /*
  * This is a class that was just used for testing, mainly for the matrix and weight boxes.
  * Leaving the old debug test code in here would not be helpful though, since constructors and a lot more changed.
+ * Using the debug elements now is clunky because the way the components repaint also changed.
  */
-
 public class MatrixTestWindow : EditorWindow {
     public Tile[] testTiles;
     SerializedObject serializedObject;
