@@ -37,10 +37,10 @@ public class WeightBox : Box {
 
         weights = new float[4];
         startingWeights = new float[4];
-        weights[0] = startingWeights[0] = 0.5f;
-        weights[1] = startingWeights[1] = 0.5f;
-        weights[2] = startingWeights[2] = 0.5f;
-        weights[3] = startingWeights[3] = 0.5f;
+        weights[0] = startingWeights[0] = 0f;
+        weights[1] = startingWeights[1] = 0f;
+        weights[2] = startingWeights[2] = 0f;
+        weights[3] = startingWeights[3] = 0f;
 
         UpdatePercentageByWeights();
 

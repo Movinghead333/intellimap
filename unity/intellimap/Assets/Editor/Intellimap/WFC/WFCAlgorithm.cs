@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +5,6 @@ public class WFCAlgorithm
 {
     public int numberCellsCollapsedByFrequencyHints = 0;
     public int numberCellsCollapsedByDirectionalProbabilities = 0;
-
 
     private float[,,] directionalWeights;
 
@@ -40,6 +38,17 @@ public class WFCAlgorithm
         this.outputMapSize = outputMapSize;
         numberCellsToCollapse = outputMapSize.x * outputMapSize.y;
 
+        // multiply the frequency into the directional weights
+        for (int i = 0; i < tileCount; i++) {
+            for (int j = 0; j < tileCount; j++) {
+                for (int d = 0; d < 4; d++) {
+                    this.directionalWeights[i, j, d] *= tileFrequencies[j];
+                }
+            }
+        }
+
+        NormalizeDirectionalWeights();
+
         resultTileIds = new int?[outputMapSize.x, outputMapSize.y];
         tileDomains = new bool[outputMapSize.x, outputMapSize.y, tileCount];
 
@@ -47,6 +56,29 @@ public class WFCAlgorithm
             for (int y = 0; y < outputMapSize.y; y++)
                 for (int t = 0; t < tileCount; t++)
                     tileDomains[x, y, t] = true;
+    }
+
+    private void NormalizeDirectionalWeights() {
+        float[,] tileDirectionSum = new float[tileCount, 4];
+        for (int i = 0; i < tileCount; i++) {
+            for (int d = 0; d < 4; d++) {
+                tileDirectionSum[i, d] = 0;
+
+                for (int j = 0; j < tileCount; j++) {
+                    tileDirectionSum[i, d] += this.directionalWeights[i, j, d];
+                }
+            }
+        }
+
+        for (int i = 0; i < tileCount; i++) {
+            for (int d = 0; d < 4; d++) {
+                if (tileDirectionSum[i, d] != 0) {
+                    for (int j = 0; j < tileCount; j++) {
+                        this.directionalWeights[i, j, d] /= tileDirectionSum[i, d];
+                    }
+                }
+            }
+        }
     }
 
     public int?[,] RunCompleteCollapse()
@@ -258,7 +290,7 @@ public class WFCAlgorithm
                 for (int i = 0; i < possibleTileIds.Count; i++)
                 {
                     int currentTileId = possibleTileIds[i];
-                    float directionalProbability = directionalWeights[adjacentTileId, currentTileId, d]; //* tileFrequencies[currentTileId];
+                    float directionalProbability = directionalWeights[adjacentTileId, currentTileId, d];
                     normalizedProbabilities[i] += directionalProbability;
                     probabilitySum += directionalProbability;
                 }
@@ -409,12 +441,13 @@ public class WFCAlgorithm
                 W += tileFrequencies[t];
 
         float entropy = 0;
-        for (int t = 0; t < tileCount; t++)
-            if (tileDomains[x, y, t])
+        for (int t = 0; t < tileCount; t++) {
+            if (tileFrequencies[t] > 0 && tileDomains[x, y, t])
             {
-                float probabilityForT = (float)tileFrequencies[t] / W;
+                float probabilityForT = tileFrequencies[t] / W;
                 entropy += probabilityForT * Mathf.Log(probabilityForT, 2);
             }
+        }
 
         entropy *= -1;
         return entropy;
