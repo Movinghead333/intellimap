@@ -15,10 +15,13 @@ public class Matrix {
     private int boxSize;
     private int minBoxSize;
 
-    Color foregroundColor;
-    Color backgroundColor;
-    Color borderColor;
-    Color highlightBorderColor;
+    private int highlightX;
+    private int highlightY;
+
+    private Color foregroundColor;
+    private Color backgroundColor;
+    private Color borderColor;
+    private Color highlightBorderColor;
 
     private WeightBox[] boxes;
 
@@ -46,13 +49,17 @@ public class Matrix {
     public void Init(int size) {
         this.size = size;
 
+        highlightX = -1;
+        highlightY = -1;
+
         detailView = new DetailView();
 
         Color weightBoxBorderColor = new Color(borderColor.r, borderColor.g, borderColor.b, 0.3f);
 
         boxes = new WeightBox[size * size];
         for (int i = 0; i < size * size; i++) {
-            boxes[i] = new WeightBox(foregroundColor, backgroundColor, weightBoxBorderColor, highlightBorderColor, detailView);
+            boxes[i] = new WeightBox(foregroundColor, backgroundColor, weightBoxBorderColor, detailView, this);
+            boxes[i].SetHighlightBorderColor(highlightBorderColor);
         }
 
         Color diagonalBackgroundColor = new Color(backgroundColor.r + 0.05f, backgroundColor.g + 0.05f, backgroundColor.b + 0.05f);
@@ -60,6 +67,8 @@ public class Matrix {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
                 int thisIndex = y * size + x;
+
+                boxes[thisIndex].GivePositionInMatrix(x, y);
 
                 if (x > y) {
                     int otherIndex = x * size + y;
@@ -73,15 +82,28 @@ public class Matrix {
 
         axisTitleBox = new TextureBox(backgroundColor, borderColor);
 
-        axisBoxes = new TextureBox[size];
+        axisBoxes = new TextureBox[size * 2];
         for (int i = 0; i < axisBoxes.Length; i++) {
             axisBoxes[i] = new TextureBox(backgroundColor, borderColor);
+            axisBoxes[i].SetHighlightBorderColor(highlightBorderColor);
         }
 
         UpdateBoxSize(forceResize: true);
     }
 
+    public void HighlightAxisBox(int x, int y) {
+        highlightX = x;
+        highlightY = y;
+    }
+
+    public void UnHighlightAxisBoxes() {
+        highlightX = -1;
+        highlightY = -1;
+    }
+
     public void Show() {
+        HighlightAxisBoxes();
+
         HandleWindowResize();
 
         GUILayout.Space(10);
@@ -101,7 +123,7 @@ public class Matrix {
 
                 for (int x = -1; x < size; x++) {
                     if (x == -1) {
-                        axisBoxes[y].Show();
+                        axisBoxes[size + y].Show();
                     }
                     else {
                         int index = y * size + x;
@@ -156,7 +178,7 @@ public class Matrix {
     }
 
     public void SetAxisTiles(Tile[] tiles) {
-        if (tiles.Length != axisBoxes.Length) {
+        if (tiles.Length != size) {
             throw new ArgumentException("Array lengths don't match");
         }
 
@@ -167,6 +189,34 @@ public class Matrix {
             }
             else {
                 axisBoxes[i].SetNoTexture();
+            }
+        }
+    }
+
+    private void HighlightAxisBoxes() {
+        for (int x = 0; x < size; x++) {
+            bool changed;
+
+            if (x == highlightX)
+                changed = axisBoxes[x].HighlightBorderColor();
+            else
+                changed = axisBoxes[x].ResetBorderColor();
+            
+            if (changed) {
+                axisBoxes[x].UpdateTexture();
+            }
+        }
+
+        for (int y = 0; y < size; y++) {
+            bool changed;
+
+            if (y == highlightY)
+                changed = axisBoxes[size + y].HighlightBorderColor();
+            else
+                changed = axisBoxes[size + y].ResetBorderColor();
+
+            if (changed) {
+                axisBoxes[size + y].UpdateTexture();
             }
         }
     }
@@ -195,8 +245,8 @@ public class Matrix {
             boxSize = windowWidth / sizeInclAxes;
         }
 
-        // plus 5 for a potential scrollbar on the right
-        float correctingForSpace = (2 * IntellimapEditor.startingSpace + 5) / sizeInclAxes;
+        // plus 10 for a potential scrollbar on the right
+        float correctingForSpace = (2 * IntellimapEditor.startingSpace + 10) / sizeInclAxes;
         boxSize -= correctingForSpace;
 
         if (boxSize < minBoxSize) {

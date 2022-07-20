@@ -14,8 +14,8 @@ public class MatrixTestWindow : EditorWindow {
 
     Matrix matrix;
 
-    WeightBox testBox;
-    DetailView detailView;
+    //WeightBox testBox;
+    //DetailView detailView;
 
     [MenuItem ("Window/Matrix Test")]
     public static void ShowWindow() {
@@ -30,9 +30,9 @@ public class MatrixTestWindow : EditorWindow {
         serializedObject = new SerializedObject(this);
         serializedProperty = serializedObject.FindProperty("testTiles");
 
-        detailView = new DetailView();
+        //detailView = new DetailView();
 
-        testBox = new WeightBox(50, 50, Color.white, Color.black, Color.blue, Color.green, detailView);
+        //testBox = new WeightBox(50, 50, Color.white, Color.black, Color.blue, Color.green, detailView);
     }
 
     private void OnGUI() {
@@ -47,6 +47,7 @@ public class MatrixTestWindow : EditorWindow {
 
         matrix.Show();
 
+        /*
         GUIUtil.HorizontalLine(Color.grey);
 
         EditorGUILayout.BeginHorizontal();
@@ -54,5 +55,6 @@ public class MatrixTestWindow : EditorWindow {
             testBox.Show();
             detailView.Show();
         EditorGUILayout.EndHorizontal();
+        */
     }
 }

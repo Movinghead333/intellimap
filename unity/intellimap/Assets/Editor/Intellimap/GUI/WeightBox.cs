@@ -7,6 +7,9 @@ using static IntellimapInput;
 
 public class WeightBox : Box {
     private DetailView detailView;
+    private Matrix matrix;
+    private int xInMatrix;
+    private int yInMatrix;
 
     private float[] weights;
     private float[] startingWeights;
@@ -17,21 +20,20 @@ public class WeightBox : Box {
     private bool dragStartedInBox;
 
     private Color foregroundColor;
-    private Color highlightBorderColor;
-    private Color originalBorderColor;
 
     private WeightBox connectedBox;
 
     // Used to repaint the window *only* when the mouse enters or leaves a box
     private bool mouseIn;
 
-    public WeightBox(Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor, DetailView detailView)
-        : this(10, 10, foregroundColor, backgroundColor, borderColor, highlightBorderColor, detailView) {}
+    public WeightBox(Color foregroundColor, Color backgroundColor, Color borderColor, DetailView detailView, Matrix matrix)
+        : this(10, 10, foregroundColor, backgroundColor, borderColor, detailView, matrix) {}
 
-    public WeightBox(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor, DetailView detailView)
+    public WeightBox(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor, DetailView detailView, Matrix matrix)
         : base(width, height, backgroundColor, borderColor)
     {
         this.detailView = detailView;
+        this.matrix = matrix;
 
         SetContentOffset(2, 0);
 
@@ -47,14 +49,17 @@ public class WeightBox : Box {
         dragStartedInBox = false;
 
         this.foregroundColor = foregroundColor;
-        this.highlightBorderColor = highlightBorderColor;
-        originalBorderColor = borderColor;
 
         connectedBox = null;
 
         mouseIn = false;
 
         UpdateTexture();
+    }
+
+    public void GivePositionInMatrix(int x, int y) {
+        xInMatrix = x;
+        yInMatrix = y;
     }
 
     public override void Show() {
@@ -90,6 +95,8 @@ public class WeightBox : Box {
                 SetText(GetPercentage().ToString());
                 HighlightBorderColor();
                 UpdateTexture();
+
+                matrix.HighlightAxisBox(xInMatrix, yInMatrix);
 
                 if (connectedBox != null) {
                     connectedBox.HighlightBorderColor();
@@ -154,7 +161,7 @@ public class WeightBox : Box {
             connectedBox.weights[2] = connectedBox.startingWeights[2] = weights[0];
             connectedBox.weights[3] = connectedBox.startingWeights[3] = weights[1];
 
-            connectedBox.currentPercentage = currentPercentage;
+            connectedBox.currentPercentage = connectedBox.startingPercentage = currentPercentage;
             connectedBox.UpdateTexture();
         }
     }
@@ -317,13 +324,6 @@ public class WeightBox : Box {
         return change;
     }
 
-    public void SetAlpha(float alpha) {
-        foregroundColor = new Color(foregroundColor.r, foregroundColor.g, foregroundColor.b, alpha);
-        
-        //borderColor = new Color(borderColor.r, borderColor.g, borderColor.b, alpha);
-        //originalBorderColor = borderColor;
-    }
-
     public override void Resize(int width, int height) {
         base.Resize(width, height);
         UpdateTexture();
@@ -341,14 +341,6 @@ public class WeightBox : Box {
         }
     }
 
-    private void HighlightBorderColor() {
-        borderColor = highlightBorderColor;
-    }
-
-    private void ResetBorderColor() {
-        borderColor = originalBorderColor;
-    }
-
     public void UpdatePercentageByWeights() {
         currentPercentage = startingPercentage = weights.Average();
     }
@@ -360,7 +352,7 @@ public class WeightBox : Box {
         SetPercentage(newFillHeight / height);
     }
 
-    private void UpdateTexture() {
+    public void UpdateTexture() {
         int fillHeight = (int)(currentPercentage * height);
 
         Color[] pixels = new Color[width * height];

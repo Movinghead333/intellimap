@@ -24,7 +24,7 @@ public class TextureBox : Box {
         DrawBackground();
     }
 
-    private void UpdateTexture() {
+    public void UpdateTexture() {
         if (externalTexture != null) {
             DrawExternalTextureOnBackground();
         }
