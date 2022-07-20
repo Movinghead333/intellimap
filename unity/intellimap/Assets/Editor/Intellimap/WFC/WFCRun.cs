@@ -33,6 +33,20 @@ public class WFCRun {
         return running;
     }
 
+    // returns if it is done
+    public bool Update() {
+        if (running) {
+            Step();
+
+            // If it's no longer running after the step, it must be done
+            if (!running) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void Step() {
         try {
             (Vector2Int tilePosition, int tileId)? result = wfcAlgorithm.RunSingleCellCollapse();

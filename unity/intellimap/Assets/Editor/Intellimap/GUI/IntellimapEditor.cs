@@ -271,11 +271,10 @@ public class IntellimapEditor : EditorWindow {
     }
 
     private void Update() {
-        if (wfc != null && wfc.Running()) {
-            wfc.Step();
+        if (wfc != null) {
+            bool done = wfc.Update();
 
-            // If it's no longer running after the step, it must be done
-            if (!wfc.Running()) {
+            if (done) {
                 wfc = null;
             }
         }
