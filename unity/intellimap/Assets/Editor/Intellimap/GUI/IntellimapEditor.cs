@@ -147,14 +147,9 @@ public class IntellimapEditor : EditorWindow {
                         CollapseMultipleCell();
                     }
 
-<<<<<<< HEAD
         if (GUILayout.Button("Clear", GUILayout.Width(80), GUILayout.Height(25))) {
                         if (targetTilemap != null)
                             targetTilemap.ClearAllTiles();
-=======
-                    if (GUILayout.Button("Clear", GUILayout.Width(80), GUILayout.Height(25))) {
-                        ClearTargetTilemap();
->>>>>>> dcfe5f9413f0d60170fa12fb1fc13c9aa387eb8d
                     }
                 GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
