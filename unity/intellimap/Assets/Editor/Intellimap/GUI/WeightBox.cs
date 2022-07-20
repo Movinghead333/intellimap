@@ -147,7 +147,16 @@ public class WeightBox : Box {
 
         UpdatePercentageByWeights();
         UpdateTexture();
-        UpdateConnectedBox();
+
+        if (connectedBox != null) {
+            connectedBox.weights[0] = connectedBox.startingWeights[0] = weights[2];
+            connectedBox.weights[1] = connectedBox.startingWeights[1] = weights[3];
+            connectedBox.weights[2] = connectedBox.startingWeights[2] = weights[0];
+            connectedBox.weights[3] = connectedBox.startingWeights[3] = weights[1];
+
+            connectedBox.currentPercentage = currentPercentage;
+            connectedBox.UpdateTexture();
+        }
     }
 
     public float GetPercentage() {
