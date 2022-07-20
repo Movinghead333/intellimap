@@ -1,16 +1,14 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
-using UnityEngine.Tilemaps;
 using System;
+using UnityEngine;
+using UnityEngine.Tilemaps;
+using UnityEditor;
 
 public class Matrix {
     private EditorWindow parentWindow;
     private float lastWindowWidth;
     private float lastWindowHeight;
 
-    private WeightBoxDetailView detailView;
+    private DetailView detailView;
 
     private int size;
     private float maxPercentageOfWindowHeight;
@@ -27,16 +25,12 @@ public class Matrix {
     private TextureBox axisTitleBox;
     private TextureBox[] axisBoxes;
 
-    private float startSpacing;
-
     public Matrix(int size, Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor,
-                            float maxPercentageOfWindowHeight, int minBoxSize, EditorWindow parentWindow)
+                  float maxPercentageOfWindowHeight, int minBoxSize, EditorWindow parentWindow)
     {
         this.parentWindow = parentWindow;
         lastWindowWidth = parentWindow.position.width;
         lastWindowHeight = parentWindow.position.height;
-
-        detailView = new WeightBoxDetailView();
 
         this.maxPercentageOfWindowHeight = maxPercentageOfWindowHeight;
         this.minBoxSize = minBoxSize;
@@ -46,18 +40,22 @@ public class Matrix {
         this.borderColor = borderColor;
         this.highlightBorderColor = highlightBorderColor;
 
-        startSpacing = 15;
-
         Init(size);
     }
 
     public void Init(int size) {
         this.size = size;
 
+        detailView = new DetailView();
+
+        Color weightBoxBorderColor = new Color(borderColor.r, borderColor.g, borderColor.b, 0.3f);
+
         boxes = new WeightBox[size * size];
         for (int i = 0; i < size * size; i++) {
-            boxes[i] = new WeightBox(foregroundColor, backgroundColor, borderColor, highlightBorderColor, detailView);
+            boxes[i] = new WeightBox(foregroundColor, backgroundColor, weightBoxBorderColor, highlightBorderColor, detailView);
         }
+
+        Color diagonalBackgroundColor = new Color(backgroundColor.r + 0.05f, backgroundColor.g + 0.05f, backgroundColor.b + 0.05f);
 
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
@@ -67,14 +65,13 @@ public class Matrix {
                     int otherIndex = x * size + y;
                     boxes[thisIndex].connectWith(boxes[otherIndex]);
                 }
-                else if (x < y) {
-                    boxes[thisIndex].SetAlpha(0.6f);
+                else if (x == y) {
+                    boxes[thisIndex].SetBackgroundColor(diagonalBackgroundColor);
                 }
             }
         }
 
         axisTitleBox = new TextureBox(backgroundColor, borderColor);
-        //axisTitleBox.SetText("Weights");
 
         axisBoxes = new TextureBox[size];
         for (int i = 0; i < axisBoxes.Length; i++) {
@@ -87,10 +84,10 @@ public class Matrix {
     public void Show() {
         HandleWindowResize();
 
-        GUILayout.Space(startSpacing);
+        GUILayout.Space(10);
 
         GUILayout.BeginHorizontal();
-            GUILayout.Space(startSpacing);
+            GUILayout.Space(IntellimapEditor.startingSpace);
 
             axisTitleBox.Show();
             for (int x = 0; x < size; x++) {
@@ -100,7 +97,7 @@ public class Matrix {
 
         for (int y = 0; y < size; y++) {
             GUILayout.BeginHorizontal();
-                GUILayout.Space(startSpacing);
+                GUILayout.Space(IntellimapEditor.startingSpace);
 
                 for (int x = -1; x < size; x++) {
                     if (x == -1) {
@@ -169,7 +166,7 @@ public class Matrix {
                 axisBoxes[i].SetTexture(sprite.texture, sprite.textureRect);
             }
             else {
-                axisBoxes[i].SetTexture(null, new Rect());
+                axisBoxes[i].SetNoTexture();
             }
         }
     }
@@ -190,24 +187,24 @@ public class Matrix {
 
         int sizeInclAxes = size + 1;
 
-        int boxSize;
+        float boxSize;
         if (maxAllowedHeight < windowWidth) {
-            boxSize = (int)maxAllowedHeight / sizeInclAxes;
+            boxSize = maxAllowedHeight / sizeInclAxes;
         }
         else {
-            boxSize = (int)windowWidth / sizeInclAxes;
+            boxSize = windowWidth / sizeInclAxes;
         }
 
-        // 2*15 for the hardcoded space in Show() and 5 for a potential scrollbar on the right
-        float correctingForSpace = 35.0f / sizeInclAxes;
-        boxSize -= (int)correctingForSpace;
-        
+        // plus 5 for a potential scrollbar on the right
+        float correctingForSpace = (2 * IntellimapEditor.startingSpace + 5) / sizeInclAxes;
+        boxSize -= correctingForSpace;
+
         if (boxSize < minBoxSize) {
             boxSize = minBoxSize;
         }
 
         if (forceResize || boxSize != this.boxSize) {
-            this.boxSize = boxSize;
+            this.boxSize = (int)boxSize;
             SetBoxSize(this.boxSize);
         }
     }

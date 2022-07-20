@@ -1,9 +1,14 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Tilemaps;
 
+/*
+ * This is the custom editor window which contains all UI elements and triggers the WFC.
+ */
 public class IntellimapEditor : EditorWindow {
+    public static bool repaint;
+    public static int startingSpace;
+
     private Vector2 scrollPos;
 
     private string baseDataPath;
@@ -17,12 +22,10 @@ public class IntellimapEditor : EditorWindow {
     private int targetHeight;
 
     private bool useSeed;
-    private long seed;
+    private int seed;
 
     #nullable enable
-    private WFCAlgorithm? currentWFCInstance;
-
-    public static bool repaint;
+    WFCRun? wfc;
     
     // Register window as menu item
     [MenuItem ("Window/Intellimap")]
@@ -37,6 +40,9 @@ public class IntellimapEditor : EditorWindow {
         // can be used by components to repaint the window
         repaint = false;
 
+        // space used by every component
+        startingSpace = 15;
+
         scrollPos = new Vector2(0, 0);
 
         targetWidth = 0;
@@ -49,16 +55,16 @@ public class IntellimapEditor : EditorWindow {
 
         Color foregroundColor = new Color(0.8f, 0.8f, 0.8f);
         Color backgroundColor = new Color(0.2f, 0.2f, 0.2f);
-        matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, Color.white, 0.5f, 30, this);
+        matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, Color.white, 0.9f, 25, this);
         
-        histogram = new Histogram(2);
+        histogram = new Histogram(10);
     }
 
     // Window GUI code
     private void OnGUI() {
         Vector2 newScrollPos = EditorGUILayout.BeginScrollView(scrollPos);
         if (newScrollPos.x != scrollPos.x || newScrollPos.y != scrollPos.y) {
-            if (!GUIUtil.CtrlHeld()) {
+            if (!IntellimapInput.CtrlHeld()) {
                 scrollPos = newScrollPos;
             }
         }
@@ -66,24 +72,25 @@ public class IntellimapEditor : EditorWindow {
             GUILayout.Space(10);
 
             EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(15);
+                GUILayout.Space(startingSpace);
 
                 baseDataPath = EditorGUILayout.TextField("Base data:", baseDataPath);
-
-                if (GUILayout.Button("...", GUILayout.Width(25))) {
-                    baseDataPath = EditorUtility.OpenFolderPanel("Open base data folder", Application.dataPath, "");
-                }
+                bool openBaseDataFolder = GUILayout.Button("...", GUILayout.Width(25));
             EditorGUILayout.EndHorizontal();
 
+            if (openBaseDataFolder) {
+                baseDataPath = EditorUtility.OpenFolderPanel("Open base data folder", Application.dataPath, "");
+            }
+
             EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(15);
+                GUILayout.Space(startingSpace);
                 EditorGUILayout.LabelField("Current base data path:", baseDataPath);
             EditorGUILayout.EndHorizontal();
 
             GUIUtil.HorizontalLine(Color.grey);
 
-            if (GUIUtil.CenteredButton("Analyze Base Data", 180, 25)) {
-                AnalyzeBaseDataButtonPressed();
+            if (GUIUtil.CenteredButton("Analyze Base Data", 170, 25)) {
+                AnalyzeBaseData();
             }
 
             matrix.Show();
@@ -95,7 +102,7 @@ public class IntellimapEditor : EditorWindow {
             GUIUtil.HorizontalLine(Color.grey);
 
             EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(15);
+                GUILayout.Space(startingSpace);
 
                 EditorGUILayout.BeginVertical();
                     targetTilemap = (Tilemap)EditorGUILayout.ObjectField("Target Tilemap:", targetTilemap, typeof(Tilemap), true);
@@ -107,7 +114,7 @@ public class IntellimapEditor : EditorWindow {
             GUIUtil.HorizontalLine(Color.grey);    
 
             EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(15);
+                GUILayout.Space(startingSpace);
 
                 EditorGUILayout.BeginVertical();
                     useSeed = EditorGUILayout.Toggle("Use own seed", useSeed);
@@ -117,7 +124,7 @@ public class IntellimapEditor : EditorWindow {
                     if (!useSeed)
                         GUI.enabled = false;
 
-                    seed = EditorGUILayout.LongField("Seed:", seed);
+                    seed = EditorGUILayout.IntField("Seed:", seed);
                     
                     if (!useSeed)
                         GUI.enabled = true;
@@ -128,20 +135,19 @@ public class IntellimapEditor : EditorWindow {
                     }
 
                     EditorGUILayout.EndHorizontal();
-
                 EditorGUILayout.EndVertical();
             EditorGUILayout.EndHorizontal();
 
-            GUILayout.Space(15);
+            GUILayout.Space(10);
 
             EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Collapse entire map", GUILayout.Width(150), GUILayout.Height(25))) {
-                        CollapseEntireMapButtonPressed();
+                    if (GUILayout.Button("Generate Entire Map", GUILayout.Width(140), GUILayout.Height(25))) {
+                        GenerateEntireMapButtonPressed();
                     }
 
-                    if (GUILayout.Button("Collapse single cell", GUILayout.Width(150), GUILayout.Height(25))) {
-                        SingleCellCollapseButtonPressed();
+                    if (GUILayout.Button("Toggle Animated Generation", GUILayout.Width(185), GUILayout.Height(25))) {
+                        ToggleAnimatedGenerationButtonPressed();
                     }
                     if (GUILayout.RepeatButton("Collapse Multiple cell", GUILayout.Width(150), GUILayout.Height(25))){
                         CollapseMultipleCell();
@@ -153,7 +159,7 @@ public class IntellimapEditor : EditorWindow {
                     }
                 GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
-            
+
         EditorGUILayout.EndScrollView();
 
         if (repaint) {
@@ -161,24 +167,18 @@ public class IntellimapEditor : EditorWindow {
         }
     }
 
-    private void AnalyzeBaseDataButtonPressed() {
+    private void AnalyzeBaseData() {
         if (baseDataPath == "") {
             ShowNotification(new GUIContent("Select a folder with tilemap prefabs"));
         }
         else {
             tilemapStats = DataUtil.LoadTilemapStats(baseDataPath);
-            if (tilemapStats.tileCount == 0) {
-                ShowNotification(new GUIContent("The folder must contain prefabs of tilemaps"));
-            }
-            else {
-                FillUIWithData();
-            }
-        }
-    }
 
-    private void ClearTargetTilemap() {
-        if (targetTilemap != null)
-            targetTilemap.ClearAllTiles();
+            if (tilemapStats.tileCount == 0)
+                ShowNotification(new GUIContent("The folder must contain prefabs of tilemaps"));
+            else
+                FillUIWithData();
+        }
     }
 
     private void FillUIWithData() {
@@ -212,27 +212,22 @@ public class IntellimapEditor : EditorWindow {
         histogram.SetSliderValues(tilemapStats.tileFrequencies);
     }
 
-    // Execute the Wave Function Collapse Algorithm with the current set of input data
-    private void CollapseEntireMapButtonPressed()
-    {
-        TryInitiliazeWFCInstance();
+    private void GenerateEntireMapButtonPressed() {
+        createNewWFCRun();
 
-        if (currentWFCInstance != null)
-        {
-            bool running = true;
-            while (running)
-            {
-                (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
+        if (wfc != null) {
+            wfc.GenerateEntireMap();
+            wfc = null;
+        }
+    }
 
-                if (result == null)
-                {
-                    currentWFCInstance = null;
-                    return;
+    private void ToggleAnimatedGenerationButtonPressed() {
+        if (wfc == null) {
+            createNewWFCRun();
+        }
 
-                }
-
-                RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
-            }
+        if (wfc != null) {
+            wfc.ToggleRunning();
         }
     }
     private void CollapseMultipleCell()
@@ -259,73 +254,56 @@ public class IntellimapEditor : EditorWindow {
     
 
 
-    private void SingleCellCollapseButtonPressed()
-    {
-        TryInitiliazeWFCInstance();
-
-        if (currentWFCInstance != null)
-        {
-            (Vector2Int tilePosition, int tileId)? result = currentWFCInstance.RunSingleCellCollapse();
-
-            if (result == null)
-            {
-                // Reset the WFC instance if we receive null as a result of single cell collapse
-                currentWFCInstance = null;
-            }
-            else
-            {
-                RenderSingleCell(result.Value.tilePosition, result.Value.tileId);
-            }
-        }
-    }
-
-    private void TryInitiliazeWFCInstance()
-    {
-        if (targetTilemap == null) {
-            ShowNotification(new GUIContent("Set a target tilemap"));
+    private void createNewWFCRun() {
+        if (Errors()) {
             return;
         }
-
-        if (tilemapStats == null) {
-            ShowNotification(new GUIContent("Select a folder with tilemap prefabs and analyze the data"));
-            return;
-        }
-
-        if (targetWidth == 0 || targetHeight == 0) {
-            ShowNotification(new GUIContent("Set target width and height"));
-            return;
-        }
-
-        if (currentWFCInstance != null)
-            return;
 
         ClearTargetTilemap();
 
         float[,,] directionalWeights = matrix.GetAllBoxWeights();
-        float[] tileFrequencies = histogram.GetNormalizedSliderValues();
-        Vector2Int targetMapSize = new Vector2Int(targetWidth, targetHeight);
-
+        float[] tileFrequencies = histogram.GetNormalizedSliderValues();            
+            
         if (!useSeed) {
             seed = GUIUtil.GetTimestamp();
         }
 
-        currentWFCInstance = new WFCAlgorithm(directionalWeights, tileFrequencies, targetMapSize);
+        wfc = new WFCRun(targetTilemap, targetWidth, targetHeight, directionalWeights, tileFrequencies, seed, tilemapStats);
+    }
+    
+    private bool Errors() {
+        if (targetTilemap == null) {
+            ShowNotification(new GUIContent("Set a target tilemap"));
+            return true;
+        }
+
+        if (tilemapStats == null) {
+            ShowNotification(new GUIContent("Select a folder with tilemap prefabs and analyze the data"));
+            return true;
+        }
+
+        if (targetWidth == 0 || targetHeight == 0) {
+            ShowNotification(new GUIContent("Set target width and height"));
+            return true;
+        }
+
+        return false;
     }
 
-    // Render the resulting tileIdMatrix to the selected Tilemap
-    //private void Render(int?[,] tileIdsMatrix)
-    //{
-    //    for (int x = 0; x < tileIdsMatrix.GetLength(0); x++)
-    //        for (int y = 0; y < tileIdsMatrix.GetLength(1); y++)
-    //            if (tileIdsMatrix[x, y].HasValue)
-    //            {
-    //                int tiledId = tileIdsMatrix[x, y].Value;
-    //                RenderSingleCell(new Vector2Int(x, y), tiledId);
-    //            }
-    //}
+    private void ClearTargetTilemap() {
+        if (targetTilemap != null) {
+            targetTilemap.ClearAllTiles();
+            wfc = null;
+        }
+    }
 
-    private void RenderSingleCell(Vector2Int tilePosition, int tileId)
-    {
-        targetTilemap.SetTile(new Vector3Int(tilePosition.x, tilePosition.y, 0), tilemapStats.idToTile[tileId]);
+    private void Update() {
+        if (wfc != null) {
+            bool done = wfc.Update();
+
+            if (done) {
+                wfc = null;
+            }
+        }
     }
 }

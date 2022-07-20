@@ -1,36 +1,35 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
 using System;
 using System.Linq;
+using UnityEngine;
 
 using static GUIUtil;
+using static IntellimapInput;
 
 public class WeightBox : Box {
-    private WeightBoxDetailView detailView;
+    private DetailView detailView;
 
     private float[] weights;
     private float[] startingWeights;
 
     private float currentPercentage;
     private float startingPercentage;
+
     private bool dragStartedInBox;
 
+    private Color foregroundColor;
     private Color highlightBorderColor;
     private Color originalBorderColor;
 
     private WeightBox connectedBox;
 
     // Used to repaint the window *only* when the mouse enters or leaves a box
-    // and not every time the mouse moves
     private bool mouseIn;
 
-    public WeightBox(Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor, WeightBoxDetailView detailView)
+    public WeightBox(Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor, DetailView detailView)
         : this(10, 10, foregroundColor, backgroundColor, borderColor, highlightBorderColor, detailView) {}
 
-    public WeightBox(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor, WeightBoxDetailView detailView)
-        : base(width, height, foregroundColor, backgroundColor, borderColor)
+    public WeightBox(int width, int height, Color foregroundColor, Color backgroundColor, Color borderColor, Color highlightBorderColor, DetailView detailView)
+        : base(width, height, backgroundColor, borderColor)
     {
         this.detailView = detailView;
 
@@ -38,22 +37,24 @@ public class WeightBox : Box {
 
         weights = new float[4];
         startingWeights = new float[4];
-        weights[0] = startingWeights[0] = 0.5f;
-        weights[1] = startingWeights[1] = 0.5f;
-        weights[2] = startingWeights[2] = 0.5f;
-        weights[3] = startingWeights[3] = 0.5f;
+        weights[0] = startingWeights[0] = 0f;
+        weights[1] = startingWeights[1] = 0f;
+        weights[2] = startingWeights[2] = 0f;
+        weights[3] = startingWeights[3] = 0f;
 
         UpdatePercentageByWeights();
+
         dragStartedInBox = false;
 
-        UpdateTexture();
-
+        this.foregroundColor = foregroundColor;
         this.highlightBorderColor = highlightBorderColor;
         originalBorderColor = borderColor;
 
         connectedBox = null;
 
         mouseIn = false;
+
+        UpdateTexture();
     }
 
     public override void Show() {
@@ -63,37 +64,14 @@ public class WeightBox : Box {
         float mouseX = Event.current.mousePosition.x;
         float mouseY = Event.current.mousePosition.y;
 
-        if (MouseMove()) {
-            bool inRect = InRectangle(boxRect, mouseX, mouseY);
-
-            if (!mouseIn && inRect) {
-                mouseIn = true;
-
-                SetText(GetPercentage().ToString());
-                HighlightBorderColor();
-
-                UpdateTexture();
-                IntellimapEditor.repaint = true;
-            }
-            else if (mouseIn && !inRect) {
-                mouseIn = false;
-
-                SetText("");
-                ResetBorderColor();
-
-                UpdateTexture();
-                IntellimapEditor.repaint = true;
-            }
-        }
+        bool inRect = InRectangle(boxRect, mouseX, mouseY);
 
         if (LeftMouseButton()) {
-            if (MouseDown()) {
-                if (InRectangle(boxRect, mouseX, mouseY)) {
-                    dragStartedInBox = true;
+            if (MouseDown() && inRect) {
+                dragStartedInBox = true;
 
-                    detailView.SetBox(this);
-                    IntellimapEditor.repaint = true;
-                }
+                detailView.SetBox(this);
+                IntellimapEditor.repaint = true;
             }
             
             if (dragStartedInBox && MouseDrag()) {
@@ -105,7 +83,38 @@ public class WeightBox : Box {
             }
         }
 
-        if (InRectangle(boxRect, mouseX, mouseY)) {
+        if (MouseMove()) {
+            if (!mouseIn && inRect) {
+                mouseIn = true;
+
+                SetText(GetPercentage().ToString());
+                HighlightBorderColor();
+                UpdateTexture();
+
+                if (connectedBox != null) {
+                    connectedBox.HighlightBorderColor();
+                    connectedBox.UpdateTexture();
+                }
+
+                IntellimapEditor.repaint = true;
+            }
+            else if (mouseIn && !inRect) {
+                mouseIn = false;
+
+                SetText("");
+                ResetBorderColor();
+                UpdateTexture();
+
+                if (connectedBox != null) {
+                    connectedBox.ResetBorderColor();
+                    connectedBox.UpdateTexture();
+                }
+
+                IntellimapEditor.repaint = true;
+            }
+        }
+
+        if (inRect) {
             float scrollAmount = MouseScroll().y;
             if (scrollAmount != 0f && CtrlHeld()) {
                 if (scrollAmount > 0) {
@@ -146,23 +155,44 @@ public class WeightBox : Box {
     }
 
     public void SetPercentage(float percentage) {
-        float diff = percentage - currentPercentage;
-        if (diff == 0) {
+        percentage = LimitToBounds(percentage, lower: 0f, upper: 1f);
+        if (percentage == currentPercentage) {
             return;
         }
 
-        float percentageDistance;
-        float[] weightDistances = new float[4];
+        float[] change = calculateWeightChange(percentage);
+        for (int i = 0; i < 4; i++) {
+            weights[i] = LimitToBounds(weights[i] + change[i], lower: 0f, upper: 1f);
+        }
+        
+        currentPercentage = percentage;
+
+        if (detailView.GetBox() != this) {
+            detailView.SetBox(this);
+        }
+        detailView.UpdateFromBox();
+
+        UpdateTexture();
+        SetText(GetPercentage().ToString());
+
+        UpdateConnectedBox();
+    }
+
+    private float[] calculateWeightChange(float newPercentage) {
         float[] change = new float[4];
 
-        // calculate change per weight
+        float diff = newPercentage - currentPercentage;
+
+        float percentageDistance;
+        float[] weightDistances = new float[4];
+
         if (isPositive(diff)) {
             // going up
 
             if (currentPercentage < startingPercentage) {
                 // going up towards the starting percentage
 
-                if (percentage > startingPercentage) {
+                if (newPercentage > startingPercentage) {
                     // overshooting the starting percentage upwards, needs 2 steps:
 
                     // until the starting percentage, take the distance to the starting percentage
@@ -173,7 +203,6 @@ public class WeightBox : Box {
 
                     float diffPercentage = (startingPercentage - currentPercentage) / diff;
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] = diffPercentage * diff * speed;
@@ -185,7 +214,6 @@ public class WeightBox : Box {
                         weightDistances[i] = 1f - startingWeights[i];
                     }
                     
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] += (1 - diffPercentage) * diff * speed;
@@ -198,7 +226,6 @@ public class WeightBox : Box {
                         weightDistances[i] = startingWeights[i] - weights[i];
                     }
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] = diff * speed;
@@ -212,7 +239,6 @@ public class WeightBox : Box {
                     weightDistances[i] = 1f - weights[i];
                 }
 
-                // calculate change
                 for (int i = 0; i < 4; i++) {
                     float speed = weightDistances[i] / percentageDistance;
                     change[i] = diff * speed;
@@ -225,7 +251,7 @@ public class WeightBox : Box {
             if (currentPercentage > startingPercentage) {
                 // going down towards the starting percentage
 
-                if (percentage < startingPercentage) {
+                if (newPercentage < startingPercentage) {
                     // overshooting the starting percentage downwards, needs 2 steps:
                     
                     // until the starting percentage, take the distance to the starting percentage
@@ -236,7 +262,6 @@ public class WeightBox : Box {
 
                     float diffPercentage = (currentPercentage - startingPercentage) / Mathf.Abs(diff);
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] = (diffPercentage * diff) * speed;
@@ -248,7 +273,6 @@ public class WeightBox : Box {
                         weightDistances[i] = startingWeights[i];
                     }
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] += ((1 - diffPercentage) * diff) * speed;
@@ -261,7 +285,6 @@ public class WeightBox : Box {
                         weightDistances[i] = weights[i] - startingWeights[i];
                     }
 
-                    // calculate change
                     for (int i = 0; i < 4; i++) {
                         float speed = weightDistances[i] / percentageDistance;
                         change[i] = diff * speed;
@@ -275,7 +298,6 @@ public class WeightBox : Box {
                     weightDistances[i] = weights[i];
                 }
 
-                // calculate change
                 for (int i = 0; i < 4; i++) {
                     float speed = weightDistances[i] / percentageDistance;
                     change[i] = diff * speed;
@@ -283,23 +305,14 @@ public class WeightBox : Box {
             }
         }
 
-        // Update the weights
-        for (int i = 0; i < 4; i++) {
-            weights[i] = LimitToBounds(weights[i] + change[i], lower: 0f, upper: 1f);
-        }
+        return change;
+    }
+
+    public void SetAlpha(float alpha) {
+        foregroundColor = new Color(foregroundColor.r, foregroundColor.g, foregroundColor.b, alpha);
         
-        currentPercentage = percentage;
-
-        if (detailView.GetBox() != this) {
-            detailView.SetBox(this);
-        }
-
-        detailView.UpdateFromBox();
-
-        UpdateTexture();
-        SetText(GetPercentage().ToString());
-
-        UpdateConnectedBox();
+        //borderColor = new Color(borderColor.r, borderColor.g, borderColor.b, alpha);
+        //originalBorderColor = borderColor;
     }
 
     public override void Resize(int width, int height) {
@@ -338,22 +351,28 @@ public class WeightBox : Box {
         SetPercentage(newFillHeight / height);
     }
 
-    // TODO: Make more efficient (give the entire array of data at once instead of setting every pixel individually)
     private void UpdateTexture() {
         int fillHeight = (int)(currentPercentage * height);
 
+        Color[] pixels = new Color[width * height];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                if (!DrawBorder(x, y)) {
-                    if (y < fillHeight)
-                        texture.SetPixel(x, y, foregroundColor);
-                    else
-                        texture.SetPixel(x, y, backgroundColor);
+                int index = y * width + x;
+
+                if (OnBorder(x, y)) {
+                    pixels[index] = borderColor;
+                }
+                else if (y < fillHeight) {
+                    pixels[index] = foregroundColor;
+                }
+                else {
+                    pixels[index] = backgroundColor;
                 }
             }
         }
+
+        texture.SetPixels(pixels);
         texture.Apply();
-        
         IntellimapEditor.repaint = true;
     }
 }

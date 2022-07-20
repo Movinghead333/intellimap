@@ -2,6 +2,9 @@ using System;
 using UnityEngine;
 using UnityEditor;
 
+/*
+ * This class houses methods for custom/modified UI components as well as utility methods used by the UI components.
+ */
 public class GUIUtil {
     public static void HorizontalLine(Color color, int leftMargin = 0, int rightMargin = 0, int topMargin = 10, int bottomMargin = 10) {
         GUIStyle horizontalLine = new GUIStyle();
@@ -46,54 +49,11 @@ public class GUIUtil {
         return f > 0;
     }
 
-    public static float Sum(float[] arr) {
-        float result = 0;
-
-        for (int i = 0; i < arr.Length; i++) {
-            result += arr[i];
-        }
-
-        return result;
-    }
-
-    public static long GetTimestamp() {
-        return new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+    public static int GetTimestamp() {
+        return (int)new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
     }
 
     public static bool InRectangle(Rect rect, float x, float y) {
         return x >= rect.x && y >= rect.y && x < rect.x + rect.width && y < rect.y + rect.height;
-    }
-
-    public static bool LeftMouseButton() {
-        return Event.current.button == 0;
-    }
-
-    public static bool MouseDown() {
-        return Event.current.type == EventType.MouseDown;
-    }
-
-    public static bool MouseUp() {
-        return Event.current.type == EventType.MouseUp;
-    }
-
-    public static bool MouseDrag() {
-        return Event.current.type == EventType.MouseDrag;
-    }
-
-    public static bool MouseMove() {
-        return Event.current.type == EventType.MouseMove;
-    }
-
-    public static Vector2 MouseScroll() {
-        if (Event.current.isScrollWheel) {
-            return Event.current.delta;        
-        }
-        else {
-            return Vector2.zero;
-        }
-    }
-
-    public static bool CtrlHeld() {
-        return Event.current.control;
     }
 }

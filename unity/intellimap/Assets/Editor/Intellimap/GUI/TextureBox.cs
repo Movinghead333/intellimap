@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class TextureBox : Box {
     private Texture2D externalTexture;
@@ -11,25 +8,20 @@ public class TextureBox : Box {
         : this(10, 10, backgroundColor, borderColor) {}
     
     public TextureBox(int width, int height, Color backgroundColor, Color borderColor)
-        : base(width, height, Color.clear, backgroundColor, borderColor)
+        : base(width, height, backgroundColor, borderColor)
     {
-        externalTexture = null;
-        UpdateTexture();
-    }
-
-    public void FillMagenta() {
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                texture.SetPixel(x, y, Color.magenta);
-            }
-        }
-        texture.Apply();
+        SetNoTexture();
     }
 
     public void SetTexture(Texture2D newTexture, Rect textureRect) {
         externalTexture = newTexture;
         externalTextureRect = textureRect;
         UpdateTexture();
+    }
+
+    public void SetNoTexture() {
+        externalTexture = null;
+        DrawBackground();
     }
 
     private void UpdateTexture() {
@@ -46,32 +38,45 @@ public class TextureBox : Box {
         int startY = (int)(height / 2 - externalTextureRect.height / 2);
         Rect externalTextureDrawRegion = new Rect(startX, startY, externalTextureRect.width, externalTextureRect.height);
 
+        Color[] pixels = new Color[width * height];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                if (!DrawBorder(x, y)) {
-                    if (GUIUtil.InRectangle(externalTextureDrawRegion, x, y)) {
-                        Color pixel = externalTexture.GetPixel((int)externalTextureRect.x + x - startX, (int)externalTextureRect.y + y - startY);
-                        texture.SetPixel(x, y, pixel);
-                    }
-                    else {
-                        texture.SetPixel(x, y, backgroundColor);
-                    }
+                int index = y * width + x;
+
+                if (OnBorder(x, y)) {
+                    pixels[index] = borderColor;
+                }
+                else if (GUIUtil.InRectangle(externalTextureDrawRegion, x, y)) {
+                    int externalX = (int)externalTextureRect.x + x - startX;
+                    int externalY = (int)externalTextureRect.y + y - startY;
+                    pixels[index] = externalTexture.GetPixel(externalX, externalY);
+                }
+                else {
+                    pixels[index] = backgroundColor;
                 }
             }
         }
 
+        texture.SetPixels(pixels);
         texture.Apply();
     }
 
     private void DrawBackground() {
+        Color[] pixels = new Color[width * height];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                if (!DrawBorder(x, y)) {
-                    texture.SetPixel(x, y, backgroundColor);
+                int index = y * width + x;
+
+                if (OnBorder(x, y)) {
+                    pixels[index] = borderColor;
+                }
+                else {
+                    pixels[index] = backgroundColor;
                 }
             }
         }
 
+        texture.SetPixels(pixels);
         texture.Apply();
     }
     
@@ -79,5 +84,4 @@ public class TextureBox : Box {
         base.Resize(width, height);
         UpdateTexture();
     }
-
 }
