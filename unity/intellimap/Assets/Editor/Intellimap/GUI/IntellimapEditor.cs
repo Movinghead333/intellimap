@@ -209,7 +209,9 @@ public class IntellimapEditor : EditorWindow {
     }
 
     private void GenerateEntireMapButtonPressed() {
-        createNewWFCRun();
+        if (wfc == null) {
+            createNewWFCRun();
+        }
 
         if (wfc != null) {
             wfc.GenerateEntireMap();
