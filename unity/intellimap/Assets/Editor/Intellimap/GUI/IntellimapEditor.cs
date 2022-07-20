@@ -57,7 +57,7 @@ public class IntellimapEditor : EditorWindow {
         Color backgroundColor = new Color(0.2f, 0.2f, 0.2f);
         matrix = new Matrix(10, foregroundColor, backgroundColor, Color.grey, Color.white, 0.9f, 25, this);
         
-        histogram = new Histogram(2);
+        histogram = new Histogram(10);
     }
 
     // Window GUI code
