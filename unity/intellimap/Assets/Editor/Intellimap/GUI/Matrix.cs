@@ -182,13 +182,23 @@ public class Matrix {
             throw new ArgumentException("Array lengths don't match");
         }
 
-        for (int i = 0; i < tiles.Length; i++) {
-            if (tiles[i] != null) {
-                Sprite sprite = tiles[i].sprite;
-                axisBoxes[i].SetTexture(sprite.texture, sprite.textureRect);
+        for (int x = 0; x < tiles.Length; x++) {
+            if (tiles[x] != null) {
+                Sprite sprite = tiles[x].sprite;
+                axisBoxes[x].SetTexture(sprite.texture, sprite.textureRect);
             }
             else {
-                axisBoxes[i].SetNoTexture();
+                axisBoxes[x].SetNoTexture();
+            }
+        }
+
+        for (int y = 0; y < tiles.Length; y++) {
+            if (tiles[y] != null) {
+                Sprite sprite = tiles[y].sprite;
+                axisBoxes[size + y].SetTexture(sprite.texture, sprite.textureRect);
+            }
+            else {
+                axisBoxes[size + y].SetNoTexture();
             }
         }
     }
