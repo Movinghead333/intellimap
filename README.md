@@ -6,7 +6,7 @@ Editor version used: **2021.3.3f1**
 
 First download the Unity Hub: [Unity Hub download](https://public-cdn.cloud.unity3d.com/hub/prod/UnityHubSetup.exe).
 
-Then you can install the correct editor version via the following link: [Unity version 2021.3.3f1](unityhub://2021.3.3f1/af2e63e8f9bd)
+Then you can install the correct editor version via the following link: *unityhub://2021.3.3f1/af2e63e8f9bd*
 
 ## Usage
 1. Go to the toolbar at the top of the Unity Editor window and select "Window > Intellimap".
